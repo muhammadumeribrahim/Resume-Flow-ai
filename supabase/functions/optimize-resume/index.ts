@@ -5,6 +5,72 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to repair common JSON issues from AI responses
+function repairJSON(jsonString: string): string {
+  let s = jsonString;
+  
+  // Remove trailing commas before ] or }
+  s = s.replace(/,(\s*[\}\]])/g, '$1');
+  
+  // Fix unquoted property names (simple cases)
+  s = s.replace(/(\{|\,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+  
+  // Try to close unclosed brackets/braces
+  const openBraces = (s.match(/\{/g) || []).length;
+  const closeBraces = (s.match(/\}/g) || []).length;
+  const openBrackets = (s.match(/\[/g) || []).length;
+  const closeBrackets = (s.match(/\]/g) || []).length;
+  
+  // Add missing closing brackets/braces
+  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    s += ']';
+  }
+  for (let i = 0; i < openBraces - closeBraces; i++) {
+    s += '}';
+  }
+  
+  return s;
+}
+
+// Safely parse JSON with repair attempts
+function safeJSONParse(content: string): any {
+  // First, clean the content
+  let cleanedContent = content.trim();
+  if (cleanedContent.startsWith("```json")) cleanedContent = cleanedContent.slice(7);
+  if (cleanedContent.startsWith("```")) cleanedContent = cleanedContent.slice(3);
+  if (cleanedContent.endsWith("```")) cleanedContent = cleanedContent.slice(0, -3);
+  cleanedContent = cleanedContent.trim();
+  
+  // Try direct parse first
+  try {
+    return JSON.parse(cleanedContent);
+  } catch (e) {
+    console.log("Direct JSON parse failed, attempting repair...");
+  }
+  
+  // Try with repaired JSON
+  try {
+    const repaired = repairJSON(cleanedContent);
+    return JSON.parse(repaired);
+  } catch (e) {
+    console.log("Repaired JSON parse failed, trying aggressive cleanup...");
+  }
+  
+  // Aggressive cleanup: find the first { and try to extract valid JSON
+  try {
+    const firstBrace = cleanedContent.indexOf('{');
+    if (firstBrace >= 0) {
+      let extracted = cleanedContent.slice(firstBrace);
+      extracted = repairJSON(extracted);
+      return JSON.parse(extracted);
+    }
+  } catch (e) {
+    console.error("All JSON parse attempts failed");
+  }
+  
+  throw new Error("Failed to parse AI response as JSON after all repair attempts");
+}
+
 interface SkillCategory {
   id: string;
   category: string;
@@ -181,13 +247,7 @@ OUTPUT JSON SHAPE (EXACT):
         throw new Error("No content returned from AI");
       }
 
-      let cleanedContent = content.trim();
-      if (cleanedContent.startsWith("```json")) cleanedContent = cleanedContent.slice(7);
-      if (cleanedContent.startsWith("```")) cleanedContent = cleanedContent.slice(3);
-      if (cleanedContent.endsWith("```")) cleanedContent = cleanedContent.slice(0, -3);
-      cleanedContent = cleanedContent.trim();
-
-      const result = JSON.parse(cleanedContent);
+      const result = safeJSONParse(content);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -328,13 +388,7 @@ OUTPUT JSON SHAPE (EXACT):
         throw new Error("No content returned from AI");
       }
 
-      let cleanedContent = content.trim();
-      if (cleanedContent.startsWith("\`\`\`json")) cleanedContent = cleanedContent.slice(7);
-      if (cleanedContent.startsWith("\`\`\`")) cleanedContent = cleanedContent.slice(3);
-      if (cleanedContent.endsWith("\`\`\`")) cleanedContent = cleanedContent.slice(0, -3);
-      cleanedContent = cleanedContent.trim();
-
-      const result = JSON.parse(cleanedContent);
+      const result = safeJSONParse(content);
       console.log("Tailor result parsed successfully");
       
       return new Response(JSON.stringify(result), {
@@ -449,13 +503,7 @@ Return a JSON object with this EXACT structure:
 
     console.log("AI response received, parsing JSON");
 
-    let cleanedContent = content.trim();
-    if (cleanedContent.startsWith("```json")) cleanedContent = cleanedContent.slice(7);
-    if (cleanedContent.startsWith("```")) cleanedContent = cleanedContent.slice(3);
-    if (cleanedContent.endsWith("```")) cleanedContent = cleanedContent.slice(0, -3);
-    cleanedContent = cleanedContent.trim();
-
-    const optimizationResult = JSON.parse(cleanedContent);
+    const optimizationResult = safeJSONParse(content);
 
     console.log("Successfully parsed optimization result");
 
