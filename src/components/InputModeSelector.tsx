@@ -1,11 +1,11 @@
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Edit, Upload, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { FileText, Edit, Upload, ArrowRight, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { ResumeAnalysis } from "@/types/resume";
 
 interface InputModeSelectorProps {
-  onSelectMode: (mode: "form" | "paste") => void;
+  onSelectMode: (mode: "form" | "paste" | "tailor") => void;
   onImportResume: (file: File) => void;
   isAnalyzing?: boolean;
   analysis?: ResumeAnalysis | null;
@@ -28,7 +28,7 @@ export const InputModeSelector = ({
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
-      <div className="max-w-3xl w-full">
+      <div className="max-w-4xl w-full">
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-heading font-bold text-foreground mb-3">
             Create Your ATS-Optimized Resume
@@ -38,7 +38,7 @@ export const InputModeSelector = ({
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-6">
+        <div className="grid sm:grid-cols-3 gap-6">
           {/* Start Fresh Card */}
           <Card
             className="p-6 cursor-pointer border-2 border-border hover:border-primary transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 group glass-effect"
@@ -50,7 +50,7 @@ export const InputModeSelector = ({
               </div>
               <h3 className="font-heading font-semibold text-xl mb-2 text-foreground">Start Fresh</h3>
               <p className="text-sm text-muted-foreground mb-6 flex-1">
-                Build your resume from scratch using our structured form with real-time preview
+                Build your resume from scratch using our structured form
               </p>
               <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                 Get Started
@@ -65,9 +65,9 @@ export const InputModeSelector = ({
               <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center mb-5 hover:scale-110 transition-all duration-300">
                 <Upload className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="font-heading font-semibold text-xl mb-2 text-foreground">Import Your Resume</h3>
+              <h3 className="font-heading font-semibold text-xl mb-2 text-foreground">Import Resume</h3>
               <p className="text-sm text-muted-foreground mb-6 flex-1">
-                Upload your current resume (PDF, DOCX, or TXT) and we'll analyze it for improvements
+                Upload your current resume and we'll format it ATS-friendly
               </p>
               
               <input
@@ -95,6 +95,31 @@ export const InputModeSelector = ({
                     Choose File
                   </>
                 )}
+              </Button>
+            </div>
+          </Card>
+
+          {/* Tailor for Job Card */}
+          <Card
+            className="p-6 cursor-pointer border-2 border-border hover:border-primary transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 group glass-effect relative overflow-hidden"
+            onClick={() => onSelectMode("tailor")}
+          >
+            <div className="absolute top-2 right-2">
+              <span className="text-[10px] font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                NEW
+              </span>
+            </div>
+            <div className="flex flex-col items-center text-center h-full">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-all duration-300">
+                <Sparkles className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-heading font-semibold text-xl mb-2 text-foreground">Tailor for Job</h3>
+              <p className="text-sm text-muted-foreground mb-6 flex-1">
+                Paste a job description + upload resume for a perfectly tailored version
+              </p>
+              <Button variant="default" className="w-full">
+                Build for Job
+                <Sparkles className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </Card>

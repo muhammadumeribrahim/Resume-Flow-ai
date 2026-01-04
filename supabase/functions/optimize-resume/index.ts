@@ -194,8 +194,153 @@ OUTPUT JSON SHAPE (EXACT):
     }
 
     // -----------------------------
-    // OPTIMIZE mode (existing)
+    // TAILOR mode: import + optimize for specific job
     // -----------------------------
+    if (body?.action === "tailor" && typeof body?.rawResumeText === "string" && typeof body?.jobDescription === "string") {
+      const rawResumeText = body.rawResumeText as string;
+      const jobDescription = body.jobDescription as string;
+
+      console.log("Tailor request received - resume chars:", rawResumeText.length, "job chars:", jobDescription.length);
+
+      const systemPrompt = `You are an expert U.S. resume parser, ATS optimizer, and career coach.
+
+GOAL:
+1) Parse the candidate's raw resume text into structured JSON.
+2) Analyze the target job description and extract key requirements, skills, and keywords.
+3) Rewrite the resume to be PERFECTLY TAILORED for this specific job:
+   - Match terminology and keywords from the job description
+   - Emphasize relevant experience and skills
+   - Rewrite bullet points to highlight matching qualifications
+   - Create a summary that positions the candidate as ideal for THIS role
+4) Provide an ATS score reflecting how well the tailored resume matches the job.
+
+RULES:
+- Return ONLY valid JSON.
+- If a field is missing from original resume, use empty string "" or [].
+- Do NOT hallucinate employers, degrees, or dates.
+- The tailored resume should read naturally while incorporating job keywords.
+- Every bullet should connect the candidate's experience to job requirements.
+
+JOB DESCRIPTION TO TARGET:
+"""
+${jobDescription}
+"""
+
+OUTPUT JSON SHAPE (EXACT):
+{
+  "parsedResumeData": {
+    "personalInfo": {
+      "fullName": "",
+      "email": "",
+      "phone": "",
+      "location": "",
+      "linkedin": "",
+      "github": "",
+      "portfolio": ""
+    },
+    "summary": "Tailored summary positioning candidate for this specific role",
+    "coreStrengths": [
+      {"id": "cat1", "category": "Category matching job requirements", "skills": "relevant, skills, from, job"}
+    ],
+    "experience": [
+      {
+        "id": "exp1",
+        "jobTitle": "",
+        "company": "",
+        "location": "",
+        "workType": "",
+        "startDate": "",
+        "endDate": "",
+        "current": false,
+        "bullets": ["Tailored bullet emphasizing relevant skills for target job"]
+      }
+    ],
+    "education": [
+      {
+        "id": "edu1",
+        "degree": "",
+        "field": "",
+        "institution": "",
+        "location": "",
+        "graduationDate": "",
+        "gpa": ""
+      }
+    ],
+    "customSections": [],
+    "skills": ["skill matching job requirements"]
+  },
+  "analysis": {
+    "weaknesses": ["Any gaps between candidate and job requirements"],
+    "improvements": ["What was enhanced for this job"],
+    "missingKeywords": ["Job requirements not covered by candidate"],
+    "score": 0
+  },
+  "atsScore": {
+    "overall": 0,
+    "keywordMatch": 0,
+    "formatting": 100,
+    "structure": 0,
+    "suggestions": ["How to improve match further"]
+  },
+  "extractedKeywords": ["keywords", "from", "job", "description"]
+}`;
+
+      const userMessage = `RAW RESUME TEXT (parse and tailor for the job description above):\n\n${rawResumeText}`;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI gateway error (tailor):", response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        throw new Error("No content returned from AI");
+      }
+
+      let cleanedContent = content.trim();
+      if (cleanedContent.startsWith("\`\`\`json")) cleanedContent = cleanedContent.slice(7);
+      if (cleanedContent.startsWith("\`\`\`")) cleanedContent = cleanedContent.slice(3);
+      if (cleanedContent.endsWith("\`\`\`")) cleanedContent = cleanedContent.slice(0, -3);
+      cleanedContent = cleanedContent.trim();
+
+      const result = JSON.parse(cleanedContent);
+      console.log("Tailor result parsed successfully");
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { resumeData, jobDescription } = body as {
       resumeData: ResumeData;
       jobDescription?: string;

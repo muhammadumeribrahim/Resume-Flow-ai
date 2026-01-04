@@ -325,6 +325,9 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
   const bodySize = 20; // 10pt
   const sectionSpacing = format === 'compact' ? 20 : 40;
 
+  // Right tab stop aligned to the usable content width (8.0")
+  const rightTabPos = convertInchesToTwip(8.0);
+
   // Name
   children.push(
     new Paragraph({
@@ -462,9 +465,6 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
   if (data.experience.length > 0) {
     addSectionHeader("Experience");
 
-    // Right tab stop aligned to the usable content width (8.5" - 0.5" - 0.5" = 7.5")
-    const rightTabPos = convertInchesToTwip(7.5);
-
     data.experience.forEach((exp) => {
       const startFormatted = formatDateFull(exp.startDate);
       const endFormatted = exp.current ? "Present" : formatDateFull(exp.endDate);
@@ -527,7 +527,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
             new TextRun({ text: edu.institution, bold: true, size: subheaderSize, font: "Times New Roman" }),
             new TextRun({ text: edu.graduationDate ? `\t${formatDateFull(edu.graduationDate)}` : "", size: bodySize, font: "Times New Roman" }),
           ],
-          tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+          tabStops: [{ type: TabStopType.RIGHT, position: rightTabPos }],
         })
       );
 
@@ -558,7 +558,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
                 new TextRun({ text: item.title, bold: true, size: subheaderSize, font: "Times New Roman" }),
                 new TextRun({ text: item.date ? `\t${item.date}` : "", size: bodySize, font: "Times New Roman" }),
               ],
-              tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+              tabStops: [{ type: TabStopType.RIGHT, position: rightTabPos }],
             })
           );
 
