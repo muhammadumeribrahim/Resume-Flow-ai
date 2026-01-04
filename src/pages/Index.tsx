@@ -8,6 +8,8 @@ import { JobDescriptionInput } from "@/components/JobDescriptionInput";
 import { ExportButtons } from "@/components/ExportButtons";
 import { ResumeData, ATSScore } from "@/types/resume";
 import { createEmptyResume, generatePlainTextResume } from "@/lib/resumeUtils";
+import { optimizeResume, applyOptimizations } from "@/lib/aiOptimization";
+import { generatePDF, generateDOCX } from "@/lib/documentExport";
 import { toast } from "sonner";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,51 +67,65 @@ const Index = () => {
   };
 
   const handleOptimize = async () => {
+    if (!resumeData.personalInfo.fullName) {
+      toast.error("Please add your name before optimizing");
+      return;
+    }
+
     setIsOptimizing(true);
     
-    // Simulate AI optimization - in production this would call Lovable AI
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    // Calculate a mock score based on content completeness
-    const hasName = resumeData.personalInfo.fullName.length > 0;
-    const hasEmail = resumeData.personalInfo.email.length > 0;
-    const hasSummary = resumeData.summary.length > 50;
-    const hasExperience = resumeData.experience.length > 0;
-    const hasSkills = resumeData.skills.filter(Boolean).length >= 5;
-    const hasBullets = resumeData.experience.some((exp) => exp.bullets.filter(Boolean).length >= 3);
-
-    let score = 40;
-    if (hasName) score += 10;
-    if (hasEmail) score += 5;
-    if (hasSummary) score += 15;
-    if (hasExperience) score += 15;
-    if (hasSkills) score += 10;
-    if (hasBullets) score += 5;
-
-    const suggestions: string[] = [];
-    if (!hasSummary) suggestions.push("Add a professional summary of 2-3 sentences");
-    if (!hasSkills) suggestions.push("Include at least 5 relevant skills");
-    if (!hasBullets) suggestions.push("Add 3+ bullet points per position with metrics");
-    if (suggestions.length === 0) suggestions.push("Great job! Your resume is well-optimized");
-
-    setAtsScore({
-      overall: Math.min(score, 98),
-      keywordMatch: jobDescription ? Math.min(score + 5, 95) : score - 10,
-      formatting: 100,
-      structure: hasExperience && hasSummary ? 95 : 70,
-      suggestions,
-    });
-
-    setIsOptimizing(false);
-    toast.success("Resume optimized! Check your ATS score.");
+    try {
+      const result = await optimizeResume(resumeData, jobDescription || undefined);
+      
+      // Apply optimizations to the resume data
+      const optimizedData = applyOptimizations(resumeData, result);
+      setResumeData(optimizedData);
+      
+      // Update ATS score
+      setAtsScore(result.atsScore);
+      
+      // Update extracted keywords
+      if (result.extractedKeywords) {
+        setExtractedKeywords(result.extractedKeywords);
+      }
+      
+      toast.success("Resume optimized for ATS! Check your updated score.");
+    } catch (error) {
+      console.error("Optimization error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to optimize resume");
+    } finally {
+      setIsOptimizing(false);
+    }
   };
 
   const handleExportPDF = () => {
-    toast.info("PDF export requires backend integration. Connect Lovable Cloud to enable.");
+    if (!resumeData.personalInfo.fullName) {
+      toast.error("Please add your name before exporting");
+      return;
+    }
+    
+    try {
+      generatePDF(resumeData);
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to generate PDF");
+    }
   };
 
-  const handleExportDOCX = () => {
-    toast.info("DOCX export requires backend integration. Connect Lovable Cloud to enable.");
+  const handleExportDOCX = async () => {
+    if (!resumeData.personalInfo.fullName) {
+      toast.error("Please add your name before exporting");
+      return;
+    }
+    
+    try {
+      await generateDOCX(resumeData);
+      toast.success("DOCX downloaded successfully!");
+    } catch (error) {
+      console.error("DOCX export error:", error);
+      toast.error("Failed to generate DOCX");
+    }
   };
 
   const handleCopyText = () => {
@@ -119,7 +135,7 @@ const Index = () => {
 
   const handleJobDescriptionChange = (value: string) => {
     setJobDescription(value);
-    // Extract keywords (simple version - would use AI in production)
+    // Extract keywords (simple version - AI will do better extraction during optimization)
     if (value.length > 50) {
       const commonKeywords = value
         .toLowerCase()
