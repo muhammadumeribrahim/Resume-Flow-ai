@@ -6,8 +6,24 @@ interface ResumePreviewProps {
   format?: ResumeFormat;
 }
 
+// Helper to format links nicely
+const formatLink = (url: string | undefined, label: string): { text: string; href: string } | null => {
+  if (!url) return null;
+  let cleanUrl = url.trim();
+  // Add https if missing
+  const href = cleanUrl.startsWith("http") ? cleanUrl : `https://${cleanUrl}`;
+  return { text: label, href };
+};
+
 export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps) => {
-  const hasContent = data.personalInfo.fullName || data.summary || data.experience.length > 0;
+  const hasContent = data.personalInfo.fullName || data.summary || (data.experience || []).length > 0;
+
+  // Safe arrays
+  const experience = data.experience || [];
+  const education = data.education || [];
+  const coreStrengths = data.coreStrengths || [];
+  const customSections = data.customSections || [];
+  const skills = data.skills || [];
 
   // Format-specific styles
   const isCompact = format === 'compact';
@@ -33,14 +49,49 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
     );
   }
 
-  const contactParts = [
-    data.personalInfo.location,
-    data.personalInfo.phone,
-    data.personalInfo.email,
-    data.personalInfo.github,
-    data.personalInfo.portfolio,
-    data.personalInfo.linkedin,
-  ].filter(Boolean);
+  // Build contact parts with clickable links
+  const contactElements: React.ReactNode[] = [];
+  
+  if (data.personalInfo.location) {
+    contactElements.push(<span key="location">{data.personalInfo.location}</span>);
+  }
+  if (data.personalInfo.phone) {
+    contactElements.push(<span key="phone">{data.personalInfo.phone}</span>);
+  }
+  if (data.personalInfo.email) {
+    contactElements.push(
+      <a key="email" href={`mailto:${data.personalInfo.email}`} className="text-blue-700 underline">
+        {data.personalInfo.email}
+      </a>
+    );
+  }
+  
+  const githubLink = formatLink(data.personalInfo.github, "GitHub");
+  if (githubLink) {
+    contactElements.push(
+      <a key="github" href={githubLink.href} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
+        GitHub
+      </a>
+    );
+  }
+  
+  const portfolioLink = formatLink(data.personalInfo.portfolio, "Portfolio");
+  if (portfolioLink) {
+    contactElements.push(
+      <a key="portfolio" href={portfolioLink.href} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
+        Portfolio
+      </a>
+    );
+  }
+  
+  const linkedinLink = formatLink(data.personalInfo.linkedin, "LinkedIn");
+  if (linkedinLink) {
+    contactElements.push(
+      <a key="linkedin" href={linkedinLink.href} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
+        LinkedIn
+      </a>
+    );
+  }
 
   // Letter page: 8.5" x 11" at 72dpi = 612px x 792px
   // Margins: top/bottom 26pt, left/right 36pt
@@ -61,12 +112,10 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
           {data.personalInfo.fullName.toUpperCase() || "YOUR NAME"}
         </h1>
         <div className={`${bodySize} ${lineHeight}`}>
-          {contactParts.map((part, idx) => (
+          {contactElements.map((el, idx) => (
             <span key={idx}>
               {idx > 0 && <span className="mx-1">|</span>}
-              <span className={part?.includes("@") || part?.includes("github") || part?.includes("linkedin") ? "text-blue-700 underline" : ""}>
-                {part}
-              </span>
+              {el}
             </span>
           ))}
         </div>
@@ -83,13 +132,13 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       )}
 
       {/* Core Strengths */}
-      {data.coreStrengths && data.coreStrengths.length > 0 && data.coreStrengths.some(c => c.category && c.skills) && (
+      {coreStrengths.length > 0 && coreStrengths.some(c => c.category && c.skills) && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
             CORE STRENGTHS
           </h2>
           <ul className={`list-none m-0 p-0 ${bodySize} ${lineHeight} mt-[2pt]`}>
-            {data.coreStrengths.filter(c => c.category && c.skills).map((cat) => (
+            {coreStrengths.filter(c => c.category && c.skills).map((cat) => (
               <li key={cat.id} className={entrySpacing}>
                 <span className="mr-1">•</span>
                 <span className="font-bold">{cat.category}:</span> {cat.skills}
@@ -100,22 +149,22 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       )}
 
       {/* Legacy Skills (if no core strengths) */}
-      {(!data.coreStrengths || data.coreStrengths.length === 0) && data.skills.length > 0 && data.skills.some(Boolean) && (
+      {coreStrengths.length === 0 && skills.length > 0 && skills.some(Boolean) && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
             SKILLS
           </h2>
-          <p className={`${bodySize} ${lineHeight} mt-[2pt]`}>{data.skills.filter(Boolean).join(" • ")}</p>
+          <p className={`${bodySize} ${lineHeight} mt-[2pt]`}>{skills.filter(Boolean).join(" • ")}</p>
         </section>
       )}
 
       {/* Experience */}
-      {data.experience.length > 0 && (
+      {experience.length > 0 && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
             EXPERIENCE
           </h2>
-          {data.experience.map((exp) => (
+          {experience.map((exp) => (
             <div key={exp.id} className={`${sectionSpacing} mt-[2pt]`}>
               {/* Company and dates - all bold */}
               <div className="flex justify-between items-baseline">
@@ -132,9 +181,9 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
                 </span>
               </div>
               {/* Bullets */}
-              {exp.bullets.filter(Boolean).length > 0 && (
+              {(exp.bullets || []).filter(Boolean).length > 0 && (
                 <ul className={`list-none m-0 p-0 mt-[1pt] ${bodySize} ${lineHeight}`}>
-                  {exp.bullets.filter(Boolean).map((bullet, idx) => (
+                  {(exp.bullets || []).filter(Boolean).map((bullet, idx) => (
                     <li key={idx} className={`${entrySpacing} pl-3 relative`}>
                       <span className="absolute left-0">•</span>
                       {bullet}
@@ -148,12 +197,12 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       )}
 
       {/* Education */}
-      {data.education.length > 0 && (
+      {education.length > 0 && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
             EDUCATION
           </h2>
-          {data.education.map((edu) => (
+          {education.map((edu) => (
             <div key={edu.id} className={`${entrySpacing} mt-[2pt]`}>
               <div className="flex justify-between items-baseline">
                 <span className={`${subheaderSize} font-bold`}>{edu.institution}</span>
@@ -171,14 +220,14 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       )}
 
       {/* Custom Sections */}
-      {data.customSections && data.customSections.length > 0 && data.customSections.some(s => s.title) && (
+      {customSections.length > 0 && customSections.some(s => s.title) && (
         <>
-          {data.customSections.filter(s => s.title).map((section) => (
+          {customSections.filter(s => s.title).map((section) => (
             <section key={section.id} className={sectionSpacing}>
               <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
                 {section.title.toUpperCase()}
               </h2>
-              {section.items.map((item) => (
+              {(section.items || []).map((item) => (
                 <div key={item.id} className={`${entrySpacing} mt-[2pt]`}>
                   {item.title && (
                     <div className="flex justify-between items-baseline">
@@ -192,9 +241,9 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
                   {item.description && (
                     <div className={`${bodySize} ${lineHeight}`}>{item.description}</div>
                   )}
-                  {item.bullets.filter(Boolean).length > 0 && (
+                  {(item.bullets || []).filter(Boolean).length > 0 && (
                     <ul className={`list-none m-0 p-0 mt-[1pt] ${bodySize} ${lineHeight}`}>
-                      {item.bullets.filter(Boolean).map((bullet, idx) => (
+                      {(item.bullets || []).filter(Boolean).map((bullet, idx) => (
                         <li key={idx} className={`${entrySpacing} pl-3 relative`}>
                           <span className="absolute left-0">•</span>
                           {bullet}
