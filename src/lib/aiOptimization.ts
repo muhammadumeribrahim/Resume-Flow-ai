@@ -55,6 +55,25 @@ export const analyzeImportedResume = async (rawResumeText: string): Promise<Impo
   return data;
 };
 
+export const tailorResumeToJob = async (
+  rawResumeText: string,
+  jobDescription: string
+): Promise<ImportAnalysisResult> => {
+  const { data, error } = await supabase.functions.invoke<ImportAnalysisResult>("optimize-resume", {
+    body: { action: "tailor", rawResumeText, jobDescription },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to tailor resume");
+  }
+
+  if (!data) {
+    throw new Error("No data returned from tailoring");
+  }
+
+  return data;
+};
+
 export const applyOptimizations = (
   currentData: ResumeData,
   optimizations: OptimizationResult

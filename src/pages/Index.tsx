@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { InputModeSelector } from "@/components/InputModeSelector";
+import { TailorResumeFlow } from "@/components/TailorResumeFlow";
 import { ResumeForm } from "@/components/ResumeForm";
 import { ResumePreview } from "@/components/ResumePreview";
 import { ATSScoreCard } from "@/components/ATSScoreCard";
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Index = () => {
-  const [mode, setMode] = useState<"select" | "form">("select");
+  const [mode, setMode] = useState<"select" | "form" | "tailor">("select");
   const [resumeData, setResumeData] = useState<ResumeData>(createEmptyResume());
   const [jobDescription, setJobDescription] = useState("");
   const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
@@ -38,9 +39,11 @@ const Index = () => {
     ],
   });
 
-  const handleSelectMode = (selectedMode: "form" | "paste") => {
+  const handleSelectMode = (selectedMode: "form" | "paste" | "tailor") => {
     if (selectedMode === "form") {
       setMode("form");
+    } else if (selectedMode === "tailor") {
+      setMode("tailor");
     }
   };
 
@@ -80,6 +83,13 @@ const Index = () => {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleTailorComplete = (data: ResumeData, score: ATSScore, keywords: string[]) => {
+    setResumeData(data);
+    setAtsScore(score);
+    setExtractedKeywords(keywords);
+    setMode("form");
   };
 
   const handleOptimize = async () => {
@@ -173,6 +183,18 @@ const Index = () => {
           onImportResume={handleImportResume}
           isAnalyzing={isAnalyzing}
           analysis={analysis}
+        />
+      </div>
+    );
+  }
+
+  if (mode === "tailor") {
+    return (
+      <div className="min-h-screen gradient-surface">
+        <Header />
+        <TailorResumeFlow
+          onComplete={handleTailorComplete}
+          onBack={() => setMode("select")}
         />
       </div>
     );
