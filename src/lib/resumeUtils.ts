@@ -1,4 +1,4 @@
-import { ResumeData, ExperienceItem, EducationItem } from "@/types/resume";
+import { ResumeData, ExperienceItem, EducationItem, SkillCategory } from "@/types/resume";
 
 export const createEmptyResume = (): ResumeData => ({
   personalInfo: {
@@ -7,8 +7,11 @@ export const createEmptyResume = (): ResumeData => ({
     phone: "",
     location: "",
     linkedin: "",
+    github: "",
+    portfolio: "",
   },
   summary: "",
+  coreStrengths: [],
   experience: [],
   education: [],
   skills: [],
@@ -19,6 +22,7 @@ export const createEmptyExperience = (): ExperienceItem => ({
   jobTitle: "",
   company: "",
   location: "",
+  workType: "",
   startDate: "",
   endDate: "",
   current: false,
@@ -28,10 +32,17 @@ export const createEmptyExperience = (): ExperienceItem => ({
 export const createEmptyEducation = (): EducationItem => ({
   id: crypto.randomUUID(),
   degree: "",
+  field: "",
   institution: "",
   location: "",
   graduationDate: "",
   gpa: "",
+});
+
+export const createEmptySkillCategory = (): SkillCategory => ({
+  id: crypto.randomUUID(),
+  category: "",
+  skills: "",
 });
 
 export const formatDate = (dateString: string): string => {
@@ -40,37 +51,51 @@ export const formatDate = (dateString: string): string => {
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
+export const formatDateFull = (dateString: string): string => {
+  if (!dateString) return "";
+  const [year, month] = dateString.split("-");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${monthNames[parseInt(month) - 1]} ${year}`;
+};
+
 export const generatePlainTextResume = (data: ResumeData): string => {
   let text = "";
   
   // Header
   text += `${data.personalInfo.fullName.toUpperCase()}\n`;
   const contactParts = [
-    data.personalInfo.email,
-    data.personalInfo.phone,
     data.personalInfo.location,
+    data.personalInfo.phone,
+    data.personalInfo.email,
+    data.personalInfo.github ? `GitHub: ${data.personalInfo.github}` : null,
+    data.personalInfo.portfolio ? `Portfolio: ${data.personalInfo.portfolio}` : null,
     data.personalInfo.linkedin,
   ].filter(Boolean);
   text += `${contactParts.join(" | ")}\n\n`;
   
   // Summary
   if (data.summary) {
-    text += `PROFESSIONAL SUMMARY\n`;
+    text += `SUMMARY\n`;
     text += `${data.summary}\n\n`;
   }
   
-  // Skills
-  if (data.skills.length > 0) {
-    text += `SKILLS\n`;
-    text += `${data.skills.join(" • ")}\n\n`;
+  // Core Strengths
+  if (data.coreStrengths.length > 0) {
+    text += `CORE STRENGTHS\n`;
+    data.coreStrengths.forEach((cat) => {
+      if (cat.category && cat.skills) {
+        text += `• ${cat.category}: ${cat.skills}\n`;
+      }
+    });
+    text += "\n";
   }
   
   // Experience
   if (data.experience.length > 0) {
-    text += `PROFESSIONAL EXPERIENCE\n`;
+    text += `EXPERIENCE\n`;
     data.experience.forEach((exp) => {
-      text += `\n${exp.jobTitle}\n`;
-      text += `${exp.company} | ${exp.location} | ${formatDate(exp.startDate)} - ${exp.current ? "Present" : formatDate(exp.endDate)}\n`;
+      text += `\n${exp.company}\t\t${formatDateFull(exp.startDate)} - ${exp.current ? "Present" : formatDateFull(exp.endDate)}\n`;
+      text += `${exp.jobTitle}\t\t${exp.location}${exp.workType ? ` | ${exp.workType}` : ""}\n`;
       exp.bullets.filter(Boolean).forEach((bullet) => {
         text += `• ${bullet}\n`;
       });
@@ -82,8 +107,8 @@ export const generatePlainTextResume = (data: ResumeData): string => {
   if (data.education.length > 0) {
     text += `EDUCATION\n`;
     data.education.forEach((edu) => {
-      text += `${edu.degree}\n`;
-      text += `${edu.institution} | ${edu.location} | ${formatDate(edu.graduationDate)}`;
+      text += `${edu.institution}\t\t${edu.graduationDate ? formatDateFull(edu.graduationDate) : ""}\n`;
+      text += `${edu.degree}${edu.field ? ` in ${edu.field}` : ""}`;
       if (edu.gpa) text += ` | GPA: ${edu.gpa}`;
       text += "\n";
     });

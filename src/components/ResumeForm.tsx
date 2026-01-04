@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, GripVertical, Briefcase, GraduationCap, User, Sparkles } from "lucide-react";
-import { ResumeData, ExperienceItem, EducationItem } from "@/types/resume";
-import { createEmptyExperience, createEmptyEducation } from "@/lib/resumeUtils";
+import { Plus, Trash2, GripVertical, Briefcase, GraduationCap, User, Sparkles, Star } from "lucide-react";
+import { ResumeData, ExperienceItem, EducationItem, SkillCategory } from "@/types/resume";
+import { createEmptyExperience, createEmptyEducation, createEmptySkillCategory } from "@/lib/resumeUtils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ResumeFormProps {
   data: ResumeData;
@@ -25,6 +26,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
     });
   };
 
+  // Experience handlers
   const addExperience = () => {
     onChange({
       ...data,
@@ -73,6 +75,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
     }
   };
 
+  // Education handlers
   const addEducation = () => {
     onChange({
       ...data,
@@ -96,32 +99,53 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
     });
   };
 
-  const updateSkills = (value: string) => {
+  // Core Strengths handlers
+  const addSkillCategory = () => {
     onChange({
       ...data,
-      skills: value.split(",").map((s) => s.trim()),
+      coreStrengths: [...(data.coreStrengths || []), createEmptySkillCategory()],
+    });
+  };
+
+  const updateSkillCategory = (id: string, updates: Partial<SkillCategory>) => {
+    onChange({
+      ...data,
+      coreStrengths: (data.coreStrengths || []).map((cat) =>
+        cat.id === id ? { ...cat, ...updates } : cat
+      ),
+    });
+  };
+
+  const removeSkillCategory = (id: string) => {
+    onChange({
+      ...data,
+      coreStrengths: (data.coreStrengths || []).filter((cat) => cat.id !== id),
     });
   };
 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personal" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
-          <TabsTrigger value="personal" className="gap-1.5 text-xs sm:text-sm">
+        <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsTrigger value="personal" className="gap-1.5 text-xs">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">Personal</span>
           </TabsTrigger>
-          <TabsTrigger value="experience" className="gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="skills" className="gap-1.5 text-xs">
+            <Star className="w-4 h-4" />
+            <span className="hidden sm:inline">Skills</span>
+          </TabsTrigger>
+          <TabsTrigger value="experience" className="gap-1.5 text-xs">
             <Briefcase className="w-4 h-4" />
             <span className="hidden sm:inline">Experience</span>
           </TabsTrigger>
-          <TabsTrigger value="education" className="gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="education" className="gap-1.5 text-xs">
             <GraduationCap className="w-4 h-4" />
             <span className="hidden sm:inline">Education</span>
           </TabsTrigger>
-          <TabsTrigger value="skills" className="gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="summary" className="gap-1.5 text-xs">
             <Sparkles className="w-4 h-4" />
-            <span className="hidden sm:inline">Skills</span>
+            <span className="hidden sm:inline">Summary</span>
           </TabsTrigger>
         </TabsList>
 
@@ -133,70 +157,141 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
             </h3>
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">Full Name *</Label>
                 <Input
                   id="fullName"
-                  placeholder="John Smith"
+                  placeholder="Muhammad Umer"
                   value={data.personalInfo.fullName}
                   onChange={(e) => updatePersonalInfo("fullName", e.target.value)}
                 />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="email@example.com"
                     value={data.personalInfo.email}
                     onChange={(e) => updatePersonalInfo("email", e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
-                    placeholder="(555) 123-4567"
+                    placeholder="(224) 625-0528"
                     value={data.personalInfo.phone}
                     onChange={(e) => updatePersonalInfo("phone", e.target.value)}
                   />
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="location">Location *</Label>
+                <Input
+                  id="location"
+                  placeholder="Chicago, IL"
+                  value={data.personalInfo.location}
+                  onChange={(e) => updatePersonalInfo("location", e.target.value)}
+                />
+              </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="github">GitHub Link (optional)</Label>
                   <Input
-                    id="location"
-                    placeholder="New York, NY"
-                    value={data.personalInfo.location}
-                    onChange={(e) => updatePersonalInfo("location", e.target.value)}
+                    id="github"
+                    placeholder="github.com/username"
+                    value={data.personalInfo.github || ""}
+                    onChange={(e) => updatePersonalInfo("github", e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="linkedin">LinkedIn (optional)</Label>
+                  <Label htmlFor="portfolio">Portfolio (optional)</Label>
                   <Input
-                    id="linkedin"
-                    placeholder="linkedin.com/in/johnsmith"
-                    value={data.personalInfo.linkedin || ""}
-                    onChange={(e) => updatePersonalInfo("linkedin", e.target.value)}
+                    id="portfolio"
+                    placeholder="yourportfolio.com"
+                    value={data.personalInfo.portfolio || ""}
+                    onChange={(e) => updatePersonalInfo("portfolio", e.target.value)}
                   />
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="linkedin">LinkedIn (optional)</Label>
+                <Input
+                  id="linkedin"
+                  placeholder="linkedin.com/in/username"
+                  value={data.personalInfo.linkedin || ""}
+                  onChange={(e) => updatePersonalInfo("linkedin", e.target.value)}
+                />
+              </div>
             </div>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="summary" className="animate-fade-in">
           <Card className="p-5 bg-card border-border">
             <h3 className="font-heading font-semibold mb-4">Professional Summary</h3>
             <Textarea
-              placeholder="Results-driven professional with 5+ years of experience..."
+              placeholder="Creative Technologist with a strong IT support foundation and hands-on web build experience. Skilled in rapid prototyping, front-end implementation (HTML/CSS/JavaScript/TypeScript/React), QA/testing, and clear technical documentation..."
               value={data.summary}
               onChange={(e) => onChange({ ...data, summary: e.target.value })}
-              rows={4}
+              rows={6}
               className="resize-none"
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Write 2-3 sentences highlighting your key qualifications and career goals.
+              Write 2-4 sentences highlighting your key qualifications, technical skills, and what you're known for.
             </p>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="skills" className="space-y-4 animate-fade-in">
+          <Card className="p-5 bg-card border-border">
+            <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+              <Star className="w-4 h-4 text-primary" />
+              Core Strengths
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Organize your skills by category (e.g., "Front-End", "Testing", "Networking/Systems")
+            </p>
+
+            {(data.coreStrengths || []).map((cat, index) => (
+              <div key={cat.id} className="mb-4 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium">Category {index + 1}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeSkillCategory(cat.id)}
+                    className="text-destructive hover:text-destructive h-8 w-8"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="grid gap-3">
+                  <div className="grid gap-2">
+                    <Label>Category Name</Label>
+                    <Input
+                      placeholder="Front-End"
+                      value={cat.category}
+                      onChange={(e) => updateSkillCategory(cat.id, { category: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Skills (comma-separated)</Label>
+                    <Input
+                      placeholder="HTML, CSS, JavaScript, TypeScript, React"
+                      value={cat.skills}
+                      onChange={(e) => updateSkillCategory(cat.id, { skills: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <Button onClick={addSkillCategory} variant="outline" className="w-full">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Skill Category
+            </Button>
           </Card>
         </TabsContent>
 
@@ -221,32 +316,51 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
               <div className="grid gap-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Job Title</Label>
+                    <Label>Company *</Label>
                     <Input
-                      placeholder="Senior Software Engineer"
-                      value={exp.jobTitle}
-                      onChange={(e) => updateExperience(exp.id, { jobTitle: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Company</Label>
-                    <Input
-                      placeholder="Tech Company Inc."
+                      placeholder="RTS Logic"
                       value={exp.company}
                       onChange={(e) => updateExperience(exp.id, { company: e.target.value })}
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <Label>Job Title *</Label>
+                    <Input
+                      placeholder="IT Support & Web Systems Analyst"
+                      value={exp.jobTitle}
+                      onChange={(e) => updateExperience(exp.id, { jobTitle: e.target.value })}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label>Location</Label>
                     <Input
-                      placeholder="San Francisco, CA"
+                      placeholder="Chicago, IL"
                       value={exp.location}
                       onChange={(e) => updateExperience(exp.id, { location: e.target.value })}
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <Label>Work Type</Label>
+                    <Select
+                      value={exp.workType || ""}
+                      onValueChange={(value) => updateExperience(exp.id, { workType: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Remote">Remote</SelectItem>
+                        <SelectItem value="Hybrid/Remote">Hybrid/Remote</SelectItem>
+                        <SelectItem value="On-site">On-site</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label>Start Date</Label>
                     <Input
@@ -279,11 +393,11 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Accomplishments (bullet points)</Label>
+                  <Label>Accomplishments (bullet points) *</Label>
                   {exp.bullets.map((bullet, bulletIndex) => (
                     <div key={bulletIndex} className="flex gap-2">
                       <Textarea
-                        placeholder="Led development of new feature resulting in 25% increase in user engagement..."
+                        placeholder="Built and maintained client-facing web experiences in WordPress, implementing responsive UI sections and interactive components focused on stability and clear UX."
                         value={bullet}
                         onChange={(e) => updateBullet(exp.id, bulletIndex, e.target.value)}
                         rows={2}
@@ -339,21 +453,30 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
               </div>
 
               <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label>Institution *</Label>
+                  <Input
+                    placeholder="DePaul University"
+                    value={edu.institution}
+                    onChange={(e) => updateEducation(edu.id, { institution: e.target.value })}
+                  />
+                </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Degree</Label>
+                    <Label>Degree *</Label>
                     <Input
-                      placeholder="Bachelor of Science in Computer Science"
+                      placeholder="Bachelor of Science"
                       value={edu.degree}
                       onChange={(e) => updateEducation(edu.id, { degree: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Institution</Label>
+                    <Label>Field of Study</Label>
                     <Input
-                      placeholder="University of California, Berkeley"
-                      value={edu.institution}
-                      onChange={(e) => updateEducation(edu.id, { institution: e.target.value })}
+                      placeholder="Computer Science"
+                      value={edu.field || ""}
+                      onChange={(e) => updateEducation(edu.id, { field: e.target.value })}
                     />
                   </div>
                 </div>
@@ -362,13 +485,13 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <div className="grid gap-2">
                     <Label>Location</Label>
                     <Input
-                      placeholder="Berkeley, CA"
+                      placeholder="Chicago, IL"
                       value={edu.location}
                       onChange={(e) => updateEducation(edu.id, { location: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Graduation Date</Label>
+                    <Label>Graduation Year</Label>
                     <Input
                       type="month"
                       value={edu.graduationDate}
@@ -392,25 +515,6 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
             <Plus className="w-4 h-4 mr-2" />
             Add Education
           </Button>
-        </TabsContent>
-
-        <TabsContent value="skills" className="animate-fade-in">
-          <Card className="p-5 bg-card border-border">
-            <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Skills & Keywords
-            </h3>
-            <Textarea
-              placeholder="JavaScript, React, Node.js, Python, SQL, Project Management, Agile..."
-              value={data.skills.join(", ")}
-              onChange={(e) => updateSkills(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Separate skills with commas. Include technical skills, tools, and soft skills.
-            </p>
-          </Card>
         </TabsContent>
       </Tabs>
 
