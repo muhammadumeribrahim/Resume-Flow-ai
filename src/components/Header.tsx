@@ -1,6 +1,16 @@
-import { FileText, Sparkles } from "lucide-react";
+import { FileText, Sparkles, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export const Header = () => {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+  };
+
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -18,9 +28,23 @@ export const Header = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="w-4 h-4 text-accent" />
-          <span className="hidden sm:inline">Powered by AI</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span className="hidden sm:inline">Powered by AI</span>
+          </div>
+
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>
