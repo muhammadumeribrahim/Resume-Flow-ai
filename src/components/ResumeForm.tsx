@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, GripVertical, Briefcase, GraduationCap, User, Sparkles, Star } from "lucide-react";
-import { ResumeData, ExperienceItem, EducationItem, SkillCategory } from "@/types/resume";
-import { createEmptyExperience, createEmptyEducation, createEmptySkillCategory } from "@/lib/resumeUtils";
+import { Plus, Trash2, GripVertical, Briefcase, GraduationCap, User, Sparkles, Star, FolderPlus } from "lucide-react";
+import { ResumeData, ExperienceItem, EducationItem, SkillCategory, CustomSection, CustomSectionItem } from "@/types/resume";
+import { createEmptyExperience, createEmptyEducation, createEmptySkillCategory, createEmptyCustomSection, createEmptyCustomSectionItem } from "@/lib/resumeUtils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -123,10 +123,89 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
     });
   };
 
+  // Custom Section handlers
+  const addCustomSection = () => {
+    onChange({
+      ...data,
+      customSections: [...(data.customSections || []), createEmptyCustomSection()],
+    });
+  };
+
+  const updateCustomSection = (id: string, updates: Partial<CustomSection>) => {
+    onChange({
+      ...data,
+      customSections: (data.customSections || []).map((section) =>
+        section.id === id ? { ...section, ...updates } : section
+      ),
+    });
+  };
+
+  const removeCustomSection = (id: string) => {
+    onChange({
+      ...data,
+      customSections: (data.customSections || []).filter((section) => section.id !== id),
+    });
+  };
+
+  const addCustomSectionItem = (sectionId: string) => {
+    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    if (section) {
+      updateCustomSection(sectionId, { items: [...section.items, createEmptyCustomSectionItem()] });
+    }
+  };
+
+  const updateCustomSectionItem = (sectionId: string, itemId: string, updates: Partial<CustomSectionItem>) => {
+    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    if (section) {
+      updateCustomSection(sectionId, {
+        items: section.items.map((item) =>
+          item.id === itemId ? { ...item, ...updates } : item
+        ),
+      });
+    }
+  };
+
+  const removeCustomSectionItem = (sectionId: string, itemId: string) => {
+    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    if (section) {
+      updateCustomSection(sectionId, {
+        items: section.items.filter((item) => item.id !== itemId),
+      });
+    }
+  };
+
+  const addCustomItemBullet = (sectionId: string, itemId: string) => {
+    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    const item = section?.items.find((i) => i.id === itemId);
+    if (item) {
+      updateCustomSectionItem(sectionId, itemId, { bullets: [...item.bullets, ""] });
+    }
+  };
+
+  const updateCustomItemBullet = (sectionId: string, itemId: string, bulletIndex: number, value: string) => {
+    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    const item = section?.items.find((i) => i.id === itemId);
+    if (item) {
+      const newBullets = [...item.bullets];
+      newBullets[bulletIndex] = value;
+      updateCustomSectionItem(sectionId, itemId, { bullets: newBullets });
+    }
+  };
+
+  const removeCustomItemBullet = (sectionId: string, itemId: string, bulletIndex: number) => {
+    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    const item = section?.items.find((i) => i.id === itemId);
+    if (item && item.bullets.length > 1) {
+      updateCustomSectionItem(sectionId, itemId, {
+        bullets: item.bullets.filter((_, idx) => idx !== bulletIndex),
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personal" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-6">
+        <TabsList className="grid w-full grid-cols-6 mb-6">
           <TabsTrigger value="personal" className="gap-1.5 text-xs">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">Personal</span>
@@ -147,10 +226,14 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
             <Sparkles className="w-4 h-4" />
             <span className="hidden sm:inline">Summary</span>
           </TabsTrigger>
+          <TabsTrigger value="custom" className="gap-1.5 text-xs">
+            <FolderPlus className="w-4 h-4" />
+            <span className="hidden sm:inline">Custom</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal" className="space-y-4 animate-fade-in">
-          <Card className="p-5 bg-card border-border">
+          <Card className="p-5 glass-effect">
             <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-primary" />
               Contact Information
@@ -229,7 +312,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
         </TabsContent>
 
         <TabsContent value="summary" className="animate-fade-in">
-          <Card className="p-5 bg-card border-border">
+          <Card className="p-5 glass-effect">
             <h3 className="font-heading font-semibold mb-4">Professional Summary</h3>
             <Textarea
               placeholder="Creative Technologist with a strong IT support foundation and hands-on web build experience. Skilled in rapid prototyping, front-end implementation (HTML/CSS/JavaScript/TypeScript/React), QA/testing, and clear technical documentation..."
@@ -245,7 +328,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
         </TabsContent>
 
         <TabsContent value="skills" className="space-y-4 animate-fade-in">
-          <Card className="p-5 bg-card border-border">
+          <Card className="p-5 glass-effect">
             <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
               <Star className="w-4 h-4 text-primary" />
               Core Strengths
@@ -297,7 +380,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
 
         <TabsContent value="experience" className="space-y-4 animate-fade-in">
           {data.experience.map((exp, index) => (
-            <Card key={exp.id} className="p-5 bg-card border-border">
+            <Card key={exp.id} className="p-5 glass-effect">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
@@ -436,7 +519,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
 
         <TabsContent value="education" className="space-y-4 animate-fade-in">
           {data.education.map((edu, index) => (
-            <Card key={edu.id} className="p-5 bg-card border-border">
+            <Card key={edu.id} className="p-5 glass-effect">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
@@ -515,6 +598,142 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
             <Plus className="w-4 h-4 mr-2" />
             Add Education
           </Button>
+        </TabsContent>
+
+        <TabsContent value="custom" className="space-y-4 animate-fade-in">
+          <Card className="p-5 glass-effect">
+            <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+              <FolderPlus className="w-4 h-4 text-primary" />
+              Custom Sections
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add custom sections like Certifications, Volunteering, Projects, Publications, Awards, etc.
+            </p>
+
+            {(data.customSections || []).map((section, sectionIndex) => (
+              <div key={section.id} className="mb-6 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 flex-1 mr-4">
+                    <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                    <Input
+                      placeholder="Section Title (e.g., Certifications)"
+                      value={section.title}
+                      onChange={(e) => updateCustomSection(section.id, { title: e.target.value })}
+                      className="font-semibold"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeCustomSection(section.id)}
+                    className="text-destructive hover:text-destructive h-8 w-8"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {section.items.map((item, itemIndex) => (
+                  <div key={item.id} className="ml-4 mb-4 p-3 bg-background/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium">Item {itemIndex + 1}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCustomSectionItem(section.id, item.id)}
+                        className="text-destructive hover:text-destructive h-7 w-7"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-3">
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Title</Label>
+                          <Input
+                            placeholder="AWS Solutions Architect"
+                            value={item.title}
+                            onChange={(e) => updateCustomSectionItem(section.id, item.id, { title: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Date (optional)</Label>
+                          <Input
+                            placeholder="2024"
+                            value={item.date || ""}
+                            onChange={(e) => updateCustomSectionItem(section.id, item.id, { date: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label className="text-xs">Subtitle (optional)</Label>
+                        <Input
+                          placeholder="Amazon Web Services"
+                          value={item.subtitle || ""}
+                          onChange={(e) => updateCustomSectionItem(section.id, item.id, { subtitle: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label className="text-xs">Description (optional)</Label>
+                        <Textarea
+                          placeholder="Brief description..."
+                          value={item.description || ""}
+                          onChange={(e) => updateCustomSectionItem(section.id, item.id, { description: e.target.value })}
+                          rows={2}
+                          className="resize-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Bullet Points (optional)</Label>
+                        {item.bullets.map((bullet, bulletIndex) => (
+                          <div key={bulletIndex} className="flex gap-2">
+                            <Input
+                              placeholder="Achievement or detail..."
+                              value={bullet}
+                              onChange={(e) => updateCustomItemBullet(section.id, item.id, bulletIndex, e.target.value)}
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeCustomItemBullet(section.id, item.id, bulletIndex)}
+                              disabled={item.bullets.length <= 1}
+                              className="shrink-0 h-9 w-9"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addCustomItemBullet(section.id, item.id)}
+                          className="text-xs"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Bullet
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addCustomSectionItem(section.id)}
+                  className="ml-4"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Item
+                </Button>
+              </div>
+            ))}
+
+            <Button onClick={addCustomSection} variant="outline" className="w-full">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Custom Section
+            </Button>
+          </Card>
         </TabsContent>
       </Tabs>
 

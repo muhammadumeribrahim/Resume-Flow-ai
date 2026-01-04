@@ -2,32 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    --background: 220 20% 14%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 220 20% 18%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 220 20% 16%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222 72% 45%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 20% 22%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 30% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 16% 22%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 168 76% 42%;
+    --accent: 168 76% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 152 69% 42%;
+    --success: 152 69% 50%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -36,52 +36,53 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 72% 45%;
+    --border: 220 16% 26%;
+    --input: 220 16% 26%;
+    --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
     /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(222 72% 45%) 0%, hsl(222 72% 35%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(222 60% 20%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 30% 98%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(168 76% 42%) 0%, hsl(168 76% 35%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 45%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 20% 10%) 0%, hsl(220 25% 18%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 20% 18%) 0%, hsl(220 20% 16%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(168 76% 50%) 0%, hsl(168 76% 40%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(220 20% 16%) 0%, hsl(220 20% 12%) 100%);
     
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1), 0 2px 4px -2px hsl(222 47% 11% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.1), 0 4px 6px -4px hsl(222 47% 11% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.1);
-    --shadow-glow: 0 0 40px hsl(222 72% 45% / 0.15);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 8px 10px -6px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.2);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 20% 12%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 22%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 16% 26%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 222 47% 6%;
+    --background: 220 20% 10%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 9%;
+    --card: 220 20% 14%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 9%;
+    --popover: 220 20% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 222 72% 55%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
+    --secondary: 220 20% 18%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 16% 18%;
+    --muted-foreground: 215 20% 60%;
 
     --accent: 168 76% 50%;
     --accent-foreground: 0 0% 100%;
@@ -92,18 +93,18 @@
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 222 72% 55%;
+    --border: 220 16% 22%;
+    --input: 220 16% 22%;
+    --ring: 217 91% 60%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 16% 22%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -137,6 +138,10 @@
   .gradient-accent {
     background: var(--gradient-accent);
   }
+
+  .gradient-surface {
+    background: var(--gradient-surface);
+  }
   
   .shadow-glow {
     box-shadow: var(--shadow-glow);
@@ -146,30 +151,45 @@
     @apply bg-clip-text text-transparent;
     background: var(--gradient-primary);
   }
+
+  .glass-effect {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50;
+  }
 }
 
-/* Resume Preview Styles */
+/* Resume Preview Styles - American Standard Format */
+/* Letter page: 8.5" x 11" = 612pt x 792pt */
+/* Name: 21pt, Section headers: 12pt, Subheaders: 11pt, Body: 10pt */
+/* Section spacing: 2pt, Entry spacing: 0pt, Line spacing: 12pt */
+/* Top/bottom margin: 26pt, Side margins: 36pt */
 .resume-preview {
   font-family: 'Times New Roman', Times, serif;
-  font-size: 11pt;
-  line-height: 1.4;
+  font-size: 10pt;
+  line-height: 12pt;
   color: #000;
+  background: #fff;
 }
 
 .resume-preview h1 {
-  font-size: 16pt;
+  font-size: 21pt;
   font-weight: bold;
   margin-bottom: 4px;
+  line-height: 1.2;
 }
 
 .resume-preview h2 {
   font-size: 12pt;
   font-weight: bold;
   border-bottom: 1px solid #000;
-  margin-top: 12px;
-  margin-bottom: 6px;
+  margin-top: 2pt;
+  margin-bottom: 2pt;
   padding-bottom: 2px;
   text-transform: uppercase;
+}
+
+.resume-preview .subheader {
+  font-size: 11pt;
+  font-weight: bold;
 }
 
 .resume-preview ul {
@@ -178,7 +198,8 @@
 }
 
 .resume-preview li {
-  margin-bottom: 2px;
+  margin-bottom: 0pt;
+  line-height: 12pt;
 }
 
 /* Scrollbar styling */

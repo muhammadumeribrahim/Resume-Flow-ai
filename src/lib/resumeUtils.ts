@@ -1,4 +1,4 @@
-import { ResumeData, ExperienceItem, EducationItem, SkillCategory } from "@/types/resume";
+import { ResumeData, ExperienceItem, EducationItem, SkillCategory, CustomSection, CustomSectionItem } from "@/types/resume";
 
 export const createEmptyResume = (): ResumeData => ({
   personalInfo: {
@@ -14,6 +14,7 @@ export const createEmptyResume = (): ResumeData => ({
   coreStrengths: [],
   experience: [],
   education: [],
+  customSections: [],
   skills: [],
 });
 
@@ -43,6 +44,21 @@ export const createEmptySkillCategory = (): SkillCategory => ({
   id: crypto.randomUUID(),
   category: "",
   skills: "",
+});
+
+export const createEmptyCustomSection = (): CustomSection => ({
+  id: crypto.randomUUID(),
+  title: "",
+  items: [],
+});
+
+export const createEmptyCustomSectionItem = (): CustomSectionItem => ({
+  id: crypto.randomUUID(),
+  title: "",
+  subtitle: "",
+  date: "",
+  description: "",
+  bullets: [""],
 });
 
 export const formatDate = (dateString: string): string => {
@@ -80,7 +96,7 @@ export const generatePlainTextResume = (data: ResumeData): string => {
   }
   
   // Core Strengths
-  if (data.coreStrengths.length > 0) {
+  if (data.coreStrengths && data.coreStrengths.length > 0) {
     text += `CORE STRENGTHS\n`;
     data.coreStrengths.forEach((cat) => {
       if (cat.category && cat.skills) {
@@ -111,6 +127,25 @@ export const generatePlainTextResume = (data: ResumeData): string => {
       text += `${edu.degree}${edu.field ? ` in ${edu.field}` : ""}`;
       if (edu.gpa) text += ` | GPA: ${edu.gpa}`;
       text += "\n";
+    });
+  }
+
+  // Custom Sections
+  if (data.customSections && data.customSections.length > 0) {
+    data.customSections.forEach((section) => {
+      if (section.title) {
+        text += `\n${section.title.toUpperCase()}\n`;
+        section.items.forEach((item) => {
+          if (item.title) {
+            text += `${item.title}${item.date ? `\t\t${item.date}` : ""}\n`;
+            if (item.subtitle) text += `${item.subtitle}\n`;
+            if (item.description) text += `${item.description}\n`;
+            item.bullets.filter(Boolean).forEach((bullet) => {
+              text += `• ${bullet}\n`;
+            });
+          }
+        });
+      }
     });
   }
   
