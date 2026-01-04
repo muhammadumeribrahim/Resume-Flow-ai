@@ -269,7 +269,7 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
   if (data.customSections && data.customSections.length > 0) {
     data.customSections.filter(s => s.title).forEach((section) => {
       addSectionHeader(section.title);
-      section.items.forEach((item) => {
+      (section.items || []).forEach((item) => {
         if (item.title) {
           checkPageBreak(lineHeight * 2);
           doc.setFontSize(subheaderSize);
@@ -294,7 +294,7 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
           }
 
           doc.setFont("times", "normal");
-          item.bullets.filter(Boolean).forEach((bullet) => {
+          (item.bullets || []).filter(Boolean).forEach((bullet) => {
             const bulletText = `• ${bullet}`;
             const lines = doc.splitTextToSize(bulletText, contentWidth - 10);
             lines.forEach((line: string, idx: number) => {
@@ -550,7 +550,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
   if (data.customSections && data.customSections.length > 0) {
     data.customSections.filter(s => s.title).forEach((section) => {
       addSectionHeader(section.title);
-      section.items.forEach((item) => {
+      (section.items || []).forEach((item) => {
         if (item.title) {
           children.push(
             new Paragraph({
@@ -582,7 +582,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
             );
           }
 
-          item.bullets.filter(Boolean).forEach((bullet) => {
+          (item.bullets || []).filter(Boolean).forEach((bullet) => {
             children.push(
               new Paragraph({
                 children: [
