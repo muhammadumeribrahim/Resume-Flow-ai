@@ -125,7 +125,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {data.summary && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-[#B8860B]">SUMMARY</span>
+            <span className="border-b-2 border-black">SUMMARY</span>
           </h2>
           <p className={`${bodySize} ${lineHeight} text-justify mt-[3pt]`}>{data.summary}</p>
         </section>
@@ -135,7 +135,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {coreStrengths.length > 0 && coreStrengths.some(c => c.category && c.skills) && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-[#B8860B]">CORE STRENGTHS</span>
+            <span className="border-b-2 border-black">CORE STRENGTHS</span>
           </h2>
           <ul className={`list-none m-0 p-0 ${bodySize} ${lineHeight} mt-[3pt]`}>
             {coreStrengths.filter(c => c.category && c.skills).map((cat) => (
@@ -152,7 +152,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {coreStrengths.length === 0 && skills.length > 0 && skills.some(Boolean) && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-[#B8860B]">SKILLS</span>
+            <span className="border-b-2 border-black">SKILLS</span>
           </h2>
           <p className={`${bodySize} ${lineHeight} mt-[3pt]`}>{skills.filter(Boolean).join(" • ")}</p>
         </section>
@@ -162,7 +162,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {experience.length > 0 && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-[#B8860B]">EXPERIENCE</span>
+            <span className="border-b-2 border-black">EXPERIENCE</span>
           </h2>
           {experience.map((exp) => {
             const startFormatted = formatDateFull(exp.startDate);
@@ -206,7 +206,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {education.length > 0 && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-[#B8860B]">EDUCATION</span>
+            <span className="border-b-2 border-black">EDUCATION</span>
           </h2>
           {education.map((edu) => {
             const gradDate = formatDateFull(edu.graduationDate);
@@ -231,7 +231,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
           {customSections.filter(s => s.title).map((section) => (
             <section key={section.id} className={sectionSpacing}>
               <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-                <span className="border-b-2 border-[#B8860B]">
+                <span className="border-b-2 border-black">
                 {section.title.toUpperCase()}</span>
               </h2>
               {(section.items || []).map((item) => (
