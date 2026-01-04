@@ -86,7 +86,19 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
     if (!url) return null;
     const trimmed = url.trim();
     if (!trimmed) return null;
-    return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+
+    // Remove accidental whitespace inside URLs (common copy/paste issue)
+    const noSpaces = trimmed.replace(/\s+/g, "");
+    const normalized = noSpaces.startsWith("http") ? noSpaces : `https://${noSpaces}`;
+
+    try {
+      // Validate URL; if invalid, skip link rather than breaking export
+      // eslint-disable-next-line no-new
+      new URL(normalized);
+      return normalized;
+    } catch {
+      return null;
+    }
   };
 
   const contactSegments: Array<{ text: string; url?: string }> = [];
@@ -113,9 +125,22 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
     (contactSegments.length > 1 ? sepWidth * (contactSegments.length - 1) : 0);
 
   const addPdfLink = (text: string, url: string, x: number, y: number) => {
+    const anyDoc = doc as unknown as {
+      textWithLink?: (t: string, xx: number, yy: number, opts: { url: string }) => void;
+      link?: (xx: number, yy: number, w: number, h: number, opts: { url: string }) => void;
+    };
+
+    if (typeof anyDoc.textWithLink === "function") {
+      anyDoc.textWithLink(text, x, y, { url });
+      return;
+    }
+
+    // Fallback: draw text + annotate link if supported
     doc.text(text, x, y);
-    const w = doc.getTextWidth(text);
-    doc.link(x, y - bodySize, w, lineHeight, { url });
+    if (typeof anyDoc.link === "function") {
+      const w = doc.getTextWidth(text);
+      anyDoc.link(x, y - bodySize, w, lineHeight, { url });
+    }
   };
 
   let xPos = (pageWidth - totalWidth) / 2;
@@ -321,7 +346,17 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
     if (!url) return null;
     const trimmed = url.trim();
     if (!trimmed) return null;
-    return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+
+    const noSpaces = trimmed.replace(/\s+/g, "");
+    const normalized = noSpaces.startsWith("http") ? noSpaces : `https://${noSpaces}`;
+
+    try {
+      // eslint-disable-next-line no-new
+      new URL(normalized);
+      return normalized;
+    } catch {
+      return null;
+    }
   };
 
   const contactSegments: Array<{ text: string; url?: string }> = [];
@@ -451,7 +486,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
               : []),
           ],
           tabStops: [{ type: TabStopType.RIGHT, position: rightTabPos }],
-          spacing: { after: 0 },
+          spacing: { before: 0, after: 0 },
         })
       );
 
@@ -465,7 +500,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
               : []),
           ],
           tabStops: [{ type: TabStopType.RIGHT, position: rightTabPos }],
-          spacing: { after: bullets.length > 0 ? 0 : sectionSpacing },
+          spacing: { before: 0, after: bullets.length > 0 ? 0 : sectionSpacing },
         })
       );
 
