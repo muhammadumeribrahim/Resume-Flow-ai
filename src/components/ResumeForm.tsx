@@ -249,7 +249,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                 <Label htmlFor="fullName">Full Name *</Label>
                 <Input
                   id="fullName"
-                  placeholder="Muhammad Umer"
+                  placeholder="John Doe"
                   value={data.personalInfo.fullName}
                   onChange={(e) => updatePersonalInfo("fullName", e.target.value)}
                 />
@@ -260,7 +260,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <Input
                     id="email"
                     type="email"
-                    placeholder="email@example.com"
+                    placeholder="john.doe@example.com"
                     value={data.personalInfo.email}
                     onChange={(e) => updatePersonalInfo("email", e.target.value)}
                   />
@@ -269,7 +269,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
-                    placeholder="(224) 625-0528"
+                    placeholder="(555) 123-4567"
                     value={data.personalInfo.phone}
                     onChange={(e) => updatePersonalInfo("phone", e.target.value)}
                   />
@@ -279,7 +279,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                 <Label htmlFor="location">Location *</Label>
                 <Input
                   id="location"
-                  placeholder="Chicago, IL"
+                  placeholder="City, State"
                   value={data.personalInfo.location}
                   onChange={(e) => updatePersonalInfo("location", e.target.value)}
                 />
@@ -289,7 +289,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <Label htmlFor="github">GitHub Link (optional)</Label>
                   <Input
                     id="github"
-                    placeholder="github.com/username"
+                    placeholder="github.com/johndoe"
                     value={data.personalInfo.github || ""}
                     onChange={(e) => updatePersonalInfo("github", e.target.value)}
                   />
@@ -298,7 +298,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <Label htmlFor="portfolio">Portfolio (optional)</Label>
                   <Input
                     id="portfolio"
-                    placeholder="yourportfolio.com"
+                    placeholder="johndoe.com"
                     value={data.personalInfo.portfolio || ""}
                     onChange={(e) => updatePersonalInfo("portfolio", e.target.value)}
                   />
@@ -308,7 +308,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                 <Label htmlFor="linkedin">LinkedIn (optional)</Label>
                 <Input
                   id="linkedin"
-                  placeholder="linkedin.com/in/username"
+                  placeholder="linkedin.com/in/johndoe"
                   value={data.personalInfo.linkedin || ""}
                   onChange={(e) => updatePersonalInfo("linkedin", e.target.value)}
                 />
@@ -321,7 +321,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
           <Card className="p-5 glass-effect">
             <h3 className="font-heading font-semibold mb-4">Professional Summary</h3>
             <Textarea
-              placeholder="Creative Technologist with a strong IT support foundation and hands-on web build experience. Skilled in rapid prototyping, front-end implementation (HTML/CSS/JavaScript/TypeScript/React), QA/testing, and clear technical documentation..."
+              placeholder="Results-driven professional with 5+ years of experience in [your field]. Proven track record in [key skills]. Passionate about [industry/goal] and committed to delivering measurable results..."
               value={data.summary}
               onChange={(e) => onChange({ ...data, summary: e.target.value })}
               rows={6}
@@ -407,7 +407,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <div className="grid gap-2">
                     <Label>Company *</Label>
                     <Input
-                      placeholder="RTS Logic"
+                      placeholder="Acme Corporation"
                       value={exp.company}
                       onChange={(e) => updateExperience(exp.id, { company: e.target.value })}
                     />
@@ -415,7 +415,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <div className="grid gap-2">
                     <Label>Job Title *</Label>
                     <Input
-                      placeholder="IT Support & Web Systems Analyst"
+                      placeholder="Software Engineer"
                       value={exp.jobTitle}
                       onChange={(e) => updateExperience(exp.id, { jobTitle: e.target.value })}
                     />
@@ -545,7 +545,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                 <div className="grid gap-2">
                   <Label>Institution *</Label>
                   <Input
-                    placeholder="DePaul University"
+                    placeholder="State University"
                     value={edu.institution}
                     onChange={(e) => updateEducation(edu.id, { institution: e.target.value })}
                   />
@@ -574,7 +574,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   <div className="grid gap-2">
                     <Label>Location</Label>
                     <Input
-                      placeholder="Chicago, IL"
+                      placeholder="City, State"
                       value={edu.location}
                       onChange={(e) => updateEducation(edu.id, { location: e.target.value })}
                     />
