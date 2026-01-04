@@ -124,20 +124,20 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {/* Summary */}
       {data.summary && (
         <section className={sectionSpacing}>
-          <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
-            SUMMARY
+          <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
+            <span className="border-b-2 border-[#B8860B]">SUMMARY</span>
           </h2>
-          <p className={`${bodySize} ${lineHeight} text-justify mt-[2pt]`}>{data.summary}</p>
+          <p className={`${bodySize} ${lineHeight} text-justify mt-[3pt]`}>{data.summary}</p>
         </section>
       )}
 
       {/* Core Strengths */}
       {coreStrengths.length > 0 && coreStrengths.some(c => c.category && c.skills) && (
         <section className={sectionSpacing}>
-          <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
-            CORE STRENGTHS
+          <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
+            <span className="border-b-2 border-[#B8860B]">CORE STRENGTHS</span>
           </h2>
-          <ul className={`list-none m-0 p-0 ${bodySize} ${lineHeight} mt-[2pt]`}>
+          <ul className={`list-none m-0 p-0 ${bodySize} ${lineHeight} mt-[3pt]`}>
             {coreStrengths.filter(c => c.category && c.skills).map((cat) => (
               <li key={cat.id} className={entrySpacing}>
                 <span className="mr-1">•</span>
@@ -151,34 +151,40 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {/* Legacy Skills (if no core strengths) */}
       {coreStrengths.length === 0 && skills.length > 0 && skills.some(Boolean) && (
         <section className={sectionSpacing}>
-          <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
-            SKILLS
+          <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
+            <span className="border-b-2 border-[#B8860B]">SKILLS</span>
           </h2>
-          <p className={`${bodySize} ${lineHeight} mt-[2pt]`}>{skills.filter(Boolean).join(" • ")}</p>
+          <p className={`${bodySize} ${lineHeight} mt-[3pt]`}>{skills.filter(Boolean).join(" • ")}</p>
         </section>
       )}
 
       {/* Experience */}
       {experience.length > 0 && (
         <section className={sectionSpacing}>
-          <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
-            EXPERIENCE
+          <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
+            <span className="border-b-2 border-[#B8860B]">EXPERIENCE</span>
           </h2>
-          {experience.map((exp) => (
-            <div key={exp.id} className={`${sectionSpacing} mt-[2pt]`}>
+          {experience.map((exp) => {
+            const startFormatted = formatDateFull(exp.startDate);
+            const endFormatted = exp.current ? "Present" : formatDateFull(exp.endDate);
+            const hasDateRange = startFormatted || endFormatted;
+            const dateDisplay = hasDateRange 
+              ? `${startFormatted || ""}${startFormatted && endFormatted ? " - " : ""}${endFormatted || ""}`
+              : "";
+            const locationParts = [exp.location, exp.workType].filter(Boolean);
+            const locationDisplay = locationParts.join(" | ");
+            
+            return (
+            <div key={exp.id} className={`${sectionSpacing} mt-[3pt]`}>
               {/* Company and dates - all bold */}
               <div className="flex justify-between items-baseline">
                 <span className={`${subheaderSize} font-bold`}>{exp.company}</span>
-                <span className={`${bodySize} font-bold`}>
-                  {formatDateFull(exp.startDate)} - {exp.current ? "Present" : formatDateFull(exp.endDate)}
-                </span>
+                {dateDisplay && <span className={`${bodySize} font-bold`}>{dateDisplay}</span>}
               </div>
               {/* Job title and location - all bold */}
               <div className="flex justify-between items-baseline">
                 <span className={`${bodySize} font-bold`}>{exp.jobTitle}</span>
-                <span className={`${bodySize} font-bold`}>
-                  {exp.location}{exp.workType && ` | ${exp.workType}`}
-                </span>
+                {locationDisplay && <span className={`${bodySize} font-bold`}>{locationDisplay}</span>}
               </div>
               {/* Bullets */}
               {(exp.bullets || []).filter(Boolean).length > 0 && (
@@ -192,30 +198,30 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
                 </ul>
               )}
             </div>
-          ))}
+          )})}
         </section>
       )}
 
       {/* Education */}
       {education.length > 0 && (
         <section className={sectionSpacing}>
-          <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
-            EDUCATION
+          <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
+            <span className="border-b-2 border-[#B8860B]">EDUCATION</span>
           </h2>
-          {education.map((edu) => (
-            <div key={edu.id} className={`${entrySpacing} mt-[2pt]`}>
+          {education.map((edu) => {
+            const gradDate = formatDateFull(edu.graduationDate);
+            return (
+            <div key={edu.id} className={`${entrySpacing} mt-[3pt]`}>
               <div className="flex justify-between items-baseline">
                 <span className={`${subheaderSize} font-bold`}>{edu.institution}</span>
-                <span className={`${bodySize}`}>
-                  {edu.graduationDate && formatDateFull(edu.graduationDate)}
-                </span>
+                {gradDate && <span className={`${bodySize}`}>{gradDate}</span>}
               </div>
               <div className={`${bodySize} ${lineHeight}`}>
                 {edu.degree}{edu.field && ` in ${edu.field}`}
                 {edu.gpa && ` | GPA: ${edu.gpa}`}
               </div>
             </div>
-          ))}
+          )})}
         </section>
       )}
 
@@ -224,11 +230,12 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
         <>
           {customSections.filter(s => s.title).map((section) => (
             <section key={section.id} className={sectionSpacing}>
-              <h2 className={`${sectionSize} font-bold border-b border-black ${entrySpacing} pb-[1px]`}>
-                {section.title.toUpperCase()}
+              <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
+                <span className="border-b-2 border-[#B8860B]">
+                {section.title.toUpperCase()}</span>
               </h2>
               {(section.items || []).map((item) => (
-                <div key={item.id} className={`${entrySpacing} mt-[2pt]`}>
+                <div key={item.id} className={`${entrySpacing} mt-[3pt]`}>
                   {item.title && (
                     <div className="flex justify-between items-baseline">
                       <span className={`${subheaderSize} font-bold`}>{item.title}</span>

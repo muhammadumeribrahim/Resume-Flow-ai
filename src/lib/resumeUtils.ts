@@ -67,11 +67,15 @@ export const formatDate = (dateString: string): string => {
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
-export const formatDateFull = (dateString: string): string => {
-  if (!dateString) return "";
-  const [year, month] = dateString.split("-");
+export const formatDateFull = (dateString: string | undefined | null): string => {
+  if (!dateString || dateString.trim() === "") return "";
+  const parts = dateString.split("-");
+  if (parts.length < 2) return dateString; // Return as-is if not proper format
+  const [year, month] = parts;
+  const monthIndex = parseInt(month) - 1;
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${monthNames[parseInt(month) - 1]} ${year}`;
+  if (isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return year || "";
+  return `${monthNames[monthIndex]} ${year}`;
 };
 
 export const generatePlainTextResume = (data: ResumeData): string => {
