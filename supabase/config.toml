@@ -1,0 +1,4 @@
+project_id = "dujuiilgctbpodepokpt"
+
+[functions.optimize-resume]
+verify_jwt = false
