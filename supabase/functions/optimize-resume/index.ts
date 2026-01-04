@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface SkillCategory {
@@ -43,32 +43,171 @@ interface ResumeData {
     graduationDate: string;
     gpa?: string;
   }[];
+  customSections?: {
+    id: string;
+    title: string;
+    items: {
+      id: string;
+      title: string;
+      subtitle?: string;
+      date?: string;
+      description?: string;
+      bullets: string[];
+    }[];
+  }[];
   skills: string[];
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { resumeData, jobDescription } = await req.json() as {
+    const body = (await req.json()) as any;
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // -----------------------------
+    // IMPORT + ANALYZE mode
+    // -----------------------------
+    if (body?.action === "import" && typeof body?.rawResumeText === "string") {
+      const rawResumeText = body.rawResumeText as string;
+
+      console.log("Import analysis request received (chars):", rawResumeText.length);
+
+      const systemPrompt = `You are an expert U.S. resume parser and ATS evaluator.
+
+GOAL:
+1) Extract the candidate's information from raw resume text and map it into the provided JSON schema.
+2) Provide a concise ATS-oriented analysis (weaknesses, improvements, missing keywords) and an ATS score.
+
+RULES:
+- Return ONLY valid JSON.
+- If a field is missing, use an empty string "" (or [] for arrays).
+- Do NOT hallucinate employers, degrees, or dates. If uncertain, leave blank.
+- Preserve bullet points as clean sentences.
+- Use single-column American resume conventions.
+
+OUTPUT JSON SHAPE (EXACT):
+{
+  "parsedResumeData": {
+    "personalInfo": {
+      "fullName": "",
+      "email": "",
+      "phone": "",
+      "location": "",
+      "linkedin": "",
+      "github": "",
+      "portfolio": ""
+    },
+    "summary": "",
+    "coreStrengths": [
+      {"id": "cat1", "category": "", "skills": ""}
+    ],
+    "experience": [
+      {
+        "id": "exp1",
+        "jobTitle": "",
+        "company": "",
+        "location": "",
+        "workType": "",
+        "startDate": "",
+        "endDate": "",
+        "current": false,
+        "bullets": [""]
+      }
+    ],
+    "education": [
+      {
+        "id": "edu1",
+        "degree": "",
+        "field": "",
+        "institution": "",
+        "location": "",
+        "graduationDate": "",
+        "gpa": ""
+      }
+    ],
+    "customSections": [],
+    "skills": []
+  },
+  "analysis": {
+    "weaknesses": [""],
+    "improvements": [""],
+    "missingKeywords": [""],
+    "score": 0
+  },
+  "atsScore": {
+    "overall": 0,
+    "keywordMatch": 0,
+    "formatting": 0,
+    "structure": 0,
+    "suggestions": [""]
+  },
+  "extractedKeywords": [""]
+}`;
+
+      const userMessage = `RAW RESUME TEXT (extract + analyze):\n\n${rawResumeText}`;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI gateway error (import):", response.status, errorText);
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        throw new Error("No content returned from AI");
+      }
+
+      let cleanedContent = content.trim();
+      if (cleanedContent.startsWith("```json")) cleanedContent = cleanedContent.slice(7);
+      if (cleanedContent.startsWith("```")) cleanedContent = cleanedContent.slice(3);
+      if (cleanedContent.endsWith("```")) cleanedContent = cleanedContent.slice(0, -3);
+      cleanedContent = cleanedContent.trim();
+
+      const result = JSON.parse(cleanedContent);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // -----------------------------
+    // OPTIMIZE mode (existing)
+    // -----------------------------
+    const { resumeData, jobDescription } = body as {
       resumeData: ResumeData;
       jobDescription?: string;
     };
 
-    console.log('Received resume optimization request for:', resumeData.personalInfo.fullName);
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    console.log("Received resume optimization request for:", resumeData?.personalInfo?.fullName);
 
     const systemPrompt = `You are an expert ATS Resume Architect and senior U.S. recruiter with 15+ years of experience. Your job is to create highly optimized resumes that achieve 90-100% ATS match scores and maximize interview callbacks.
 
-RESUME FORMAT REQUIREMENTS:
+RESUME STRUCTURE REQUIREMENTS:
 1. Use this exact structure: SUMMARY → CORE STRENGTHS → EXPERIENCE → EDUCATION
-2. Section headers in ALL CAPS with gold underline styling
+2. Keep content ATS-friendly: single-column, no tables, no icons.
 
 SUMMARY OPTIMIZATION:
 - Write 3-4 impactful sentences
@@ -79,44 +218,32 @@ SUMMARY OPTIMIZATION:
 
 CORE STRENGTHS FORMAT (CRITICAL):
 - Organize skills into 4-6 categories
-- Categories should be: "Front-End", "Web + Platforms", "Testing", "Networking/Systems", "Hardware", "Creative Tech Interest" (adjust based on the person's background)
-- Format: "Category Name: skill1, skill2, skill3, skill4"
-- Include tools, technologies, and methodologies
+- Format: "Category Name: skill1, skill2, skill3"
 
 EXPERIENCE BULLETS (CRITICAL - MUST FOLLOW):
 Each bullet MUST:
-1. Start with a STRONG action verb (Led, Built, Developed, Implemented, Supported, Coordinated, Translated, Performed)
+1. Start with a STRONG action verb
 2. Describe the specific work/project
 3. Include tools, technologies, or methods used
 4. End with a measurable outcome or impact
 5. Be 1-2 lines maximum
 
-Example bullets:
-- "Built and maintained client-facing web experiences in WordPress, implementing responsive UI sections and interactive components focused on stability and clear UX."
-- "Supported a recurring release cadence by running regression checks, validating fixes, and documenting bugs with reproducible steps, expected vs actual results, and post-fix verification."
-- "Led a website upgrade that replaced a static contact page with an email-routed contact workflow and validated end-to-end submission handling across devices."
-
 ATS KEYWORD OPTIMIZATION:
-${jobDescription ? `Analyze this job description and incorporate relevant keywords naturally:
-"${jobDescription}"` : 'Optimize for general ATS systems and common industry keywords.'}
+${jobDescription ? `Analyze this job description and incorporate relevant keywords naturally:\n"${jobDescription}"` : "Optimize for general ATS systems and common industry keywords."}
 
 Return a JSON object with this EXACT structure:
 {
   "optimizedSummary": "Full professional summary paragraph",
   "optimizedCoreStrengths": [
-    {"id": "cat1", "category": "Front-End", "skills": "HTML, CSS, JavaScript, TypeScript, React"},
-    {"id": "cat2", "category": "Web + Platforms", "skills": "REST APIs, JSON, WordPress, Node"},
-    {"id": "cat3", "category": "Testing", "skills": "QA workflows, test plans, regression/UAT, performance testing, form validation"},
-    {"id": "cat4", "category": "Networking/Systems", "skills": "TCP/IP, DNS, DHCP fundamentals, Wi-Fi troubleshooting, VPN basics"},
-    {"id": "cat5", "category": "Hardware", "skills": "peripherals, cables/displays, printers, basic workstation setup and triage"}
+    {"id": "cat1", "category": "Front-End", "skills": "HTML, CSS, JavaScript, TypeScript, React"}
   ],
   "optimizedExperience": [
     {
       "id": "original-experience-id",
       "optimizedBullets": [
-        "First optimized bullet following the formula",
-        "Second optimized bullet with action verb and outcome",
-        "Third optimized bullet with specific tools mentioned"
+        "First optimized bullet",
+        "Second optimized bullet",
+        "Third optimized bullet"
       ]
     }
   ],
@@ -125,56 +252,44 @@ Return a JSON object with this EXACT structure:
     "keywordMatch": 92,
     "formatting": 100,
     "structure": 95,
-    "suggestions": ["Add more quantified metrics to experience bullets", "Include certifications if available"]
+    "suggestions": ["Add more quantified metrics"]
   },
-  "extractedKeywords": ["react", "wordpress", "qa", "agile", "typescript"]
+  "extractedKeywords": ["react", "wordpress"]
 }`;
 
-    const userMessage = `Optimize this resume data for maximum ATS compatibility and interview callbacks:
+    const userMessage = `Optimize this resume data for maximum ATS compatibility and interview callbacks:\n\nCURRENT RESUME DATA:\n${JSON.stringify(resumeData, null, 2)}\n\nRequirements:\n1. Create a compelling professional summary\n2. Organize skills into Core Strengths categories\n3. Rewrite ALL experience bullets following the action verb + task + tool + outcome formula\n4. Each position should have 3-5 strong bullets\n\nReturn ONLY the JSON object, no markdown or extra text.`;
 
-CURRENT RESUME DATA:
-${JSON.stringify(resumeData, null, 2)}
+    console.log("Calling AI gateway for full resume optimization");
 
-Requirements:
-1. Create a compelling professional summary
-2. Organize skills into Core Strengths categories
-3. Rewrite ALL experience bullets following the action verb + task + tool + outcome formula
-4. Each position should have 3-5 strong bullets
-5. Ensure ATS-friendly formatting throughout
-
-Return ONLY the JSON object, no markdown or extra text.`;
-
-    console.log('Calling AI gateway for full resume optimization');
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: "google/gemini-2.5-flash",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
         ],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      
+      console.error("AI gateway error:", response.status, errorText);
+
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI usage limit reached. Please add credits to continue.' }), {
+        return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
           status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       throw new Error(`AI gateway error: ${response.status}`);
@@ -184,38 +299,34 @@ Return ONLY the JSON object, no markdown or extra text.`;
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error('No content returned from AI');
+      throw new Error("No content returned from AI");
     }
 
-    console.log('AI response received, parsing JSON');
+    console.log("AI response received, parsing JSON");
 
-    // Parse the JSON response
     let cleanedContent = content.trim();
-    if (cleanedContent.startsWith('```json')) {
-      cleanedContent = cleanedContent.slice(7);
-    }
-    if (cleanedContent.startsWith('```')) {
-      cleanedContent = cleanedContent.slice(3);
-    }
-    if (cleanedContent.endsWith('```')) {
-      cleanedContent = cleanedContent.slice(0, -3);
-    }
+    if (cleanedContent.startsWith("```json")) cleanedContent = cleanedContent.slice(7);
+    if (cleanedContent.startsWith("```")) cleanedContent = cleanedContent.slice(3);
+    if (cleanedContent.endsWith("```")) cleanedContent = cleanedContent.slice(0, -3);
     cleanedContent = cleanedContent.trim();
 
     const optimizationResult = JSON.parse(cleanedContent);
 
-    console.log('Successfully parsed optimization result');
+    console.log("Successfully parsed optimization result");
 
     return new Response(JSON.stringify(optimizationResult), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error('Error in optimize-resume function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error("Error in optimize-resume function:", error);
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error occurred",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });

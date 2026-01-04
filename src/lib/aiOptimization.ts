@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { ResumeData, ATSScore, SkillCategory } from "@/types/resume";
+import type { ATSScore, ResumeAnalysis, ResumeData } from "@/types/resume";
 
 interface OptimizationResult {
   optimizedSummary: string;
@@ -13,20 +13,43 @@ interface OptimizationResult {
   extractedKeywords: string[];
 }
 
+interface ImportAnalysisResult {
+  parsedResumeData: ResumeData;
+  analysis: ResumeAnalysis;
+  atsScore?: ATSScore;
+  extractedKeywords?: string[];
+}
+
 export const optimizeResume = async (
   resumeData: ResumeData,
   jobDescription?: string
 ): Promise<OptimizationResult> => {
-  const { data, error } = await supabase.functions.invoke<OptimizationResult>('optimize-resume', {
+  const { data, error } = await supabase.functions.invoke<OptimizationResult>("optimize-resume", {
     body: { resumeData, jobDescription },
   });
 
   if (error) {
-    throw new Error(error.message || 'Failed to optimize resume');
+    throw new Error(error.message || "Failed to optimize resume");
   }
 
   if (!data) {
-    throw new Error('No data returned from optimization');
+    throw new Error("No data returned from optimization");
+  }
+
+  return data;
+};
+
+export const analyzeImportedResume = async (rawResumeText: string): Promise<ImportAnalysisResult> => {
+  const { data, error } = await supabase.functions.invoke<ImportAnalysisResult>("optimize-resume", {
+    body: { action: "import", rawResumeText },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to analyze imported resume");
+  }
+
+  if (!data) {
+    throw new Error("No data returned from import analysis");
   }
 
   return data;

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { InputModeSelector } from "@/components/InputModeSelector";
 import { ResumeForm } from "@/components/ResumeForm";
@@ -6,10 +6,11 @@ import { ResumePreview } from "@/components/ResumePreview";
 import { ATSScoreCard } from "@/components/ATSScoreCard";
 import { JobDescriptionInput } from "@/components/JobDescriptionInput";
 import { ExportButtons } from "@/components/ExportButtons";
-import { ResumeData, ATSScore, ResumeFormat, ResumeAnalysis } from "@/types/resume";
+import { ATSScore, ResumeAnalysis, ResumeData, ResumeFormat } from "@/types/resume";
 import { createEmptyResume, generatePlainTextResume } from "@/lib/resumeUtils";
-import { optimizeResume, applyOptimizations } from "@/lib/aiOptimization";
-import { generatePDF, generateDOCX } from "@/lib/documentExport";
+import { analyzeImportedResume, applyOptimizations, optimizeResume } from "@/lib/aiOptimization";
+import { generateDOCX, generatePDF } from "@/lib/documentExport";
+import { extractResumeTextFromFile } from "@/lib/resumeImport";
 import { toast } from "sonner";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
   const [showPreview, setShowPreview] = useState(true);
-  const [resumeFormat, setResumeFormat] = useState<ResumeFormat>('standard');
+  const [resumeFormat, setResumeFormat] = useState<ResumeFormat>("standard");
   const [atsScore, setAtsScore] = useState<ATSScore>({
     overall: 0,
     keywordMatch: 0,
@@ -45,53 +46,37 @@ const Index = () => {
 
   const handleImportResume = async (file: File) => {
     setIsAnalyzing(true);
-    
+
     try {
-      // Read file content
-      const text = await file.text();
-      
-      // Parse basic info from text
-      const parsed = createEmptyResume();
-      const lines = text.split("\n").filter((l) => l.trim());
-      
-      if (lines[0]) {
-        parsed.personalInfo.fullName = lines[0].trim();
-      }
-      
-      const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/);
-      if (emailMatch) {
-        parsed.personalInfo.email = emailMatch[0];
-      }
-      
-      const phoneMatch = text.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-      if (phoneMatch) {
-        parsed.personalInfo.phone = phoneMatch[0];
+      const rawText = await extractResumeTextFromFile(file);
+      if (!rawText || rawText.trim().length < 50) {
+        throw new Error("We couldn't extract enough text from that file. Try a different PDF/DOCX, or upload a TXT version.");
       }
 
-      setResumeData(parsed);
-      
-      // Mock analysis results (in production this would be AI-powered)
-      const mockAnalysis: ResumeAnalysis = {
-        weaknesses: [
-          "Missing quantified achievements in experience bullets",
-          "Skills section needs to be organized into categories",
-          "Professional summary could be more impactful",
-          "Consider adding action verbs to each bullet point"
-        ],
-        improvements: [
-          "Add metrics and numbers to demonstrate impact",
-          "Include relevant keywords from job descriptions",
-          "Structure skills by category (Technical, Soft Skills, etc.)"
-        ],
-        missingKeywords: ["leadership", "project management", "analytics"],
-        score: 65
-      };
-      
-      setAnalysis(mockAnalysis);
-      toast.success("Resume imported! Review the analysis below.");
+      const result = await analyzeImportedResume(rawText);
+
+      setResumeData(result.parsedResumeData);
+      setAnalysis(result.analysis);
+
+      if (result.atsScore) {
+        setAtsScore(result.atsScore);
+      } else {
+        // fall back to a minimal score card from analysis.score
+        setAtsScore((prev) => ({
+          ...prev,
+          overall: result.analysis.score,
+          suggestions: result.analysis.weaknesses?.slice(0, 3) || prev.suggestions,
+        }));
+      }
+
+      if (result.extractedKeywords) {
+        setExtractedKeywords(result.extractedKeywords);
+      }
+
+      toast.success("Resume imported and analyzed. Review the findings, then continue to optimize.");
     } catch (error) {
       console.error("Import error:", error);
-      toast.error("Failed to import resume. Please try a different file.");
+      toast.error(error instanceof Error ? error.message : "Failed to import resume. Please try a different file.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -104,20 +89,20 @@ const Index = () => {
     }
 
     setIsOptimizing(true);
-    
+
     try {
       const result = await optimizeResume(resumeData, jobDescription || undefined);
-      
+
       const optimizedData = applyOptimizations(resumeData, result);
       setResumeData(optimizedData);
-      
+
       setAtsScore(result.atsScore);
-      
+
       if (result.extractedKeywords) {
         setExtractedKeywords(result.extractedKeywords);
       }
-      
-      setAnalysis(null); // Clear analysis after optimization
+
+      setAnalysis(null);
       toast.success("Resume optimized for ATS! Check your updated score.");
     } catch (error) {
       console.error("Optimization error:", error);
@@ -132,7 +117,7 @@ const Index = () => {
       toast.error("Please add your name before exporting");
       return;
     }
-    
+
     try {
       generatePDF(resumeData, resumeFormat);
       toast.success("PDF downloaded successfully!");
@@ -147,7 +132,7 @@ const Index = () => {
       toast.error("Please add your name before exporting");
       return;
     }
-    
+
     try {
       await generateDOCX(resumeData, resumeFormat);
       toast.success("DOCX downloaded successfully!");
@@ -168,7 +153,9 @@ const Index = () => {
     if (value.length > 50) {
       const commonKeywords = value
         .toLowerCase()
-        .match(/\b(python|javascript|react|sql|aws|agile|communication|leadership|project management|data analysis|machine learning|excel|tableau|salesforce|marketing|sales|operations|customer service|teamwork|problem.solving)\b/gi);
+        .match(
+          /\b(python|javascript|react|sql|aws|agile|communication|leadership|project management|data analysis|machine learning|excel|tableau|salesforce|marketing|sales|operations|customer service|teamwork|problem.solving)\b/gi
+        );
       if (commonKeywords) {
         setExtractedKeywords([...new Set(commonKeywords.map((k) => k.toLowerCase()))]);
       }
@@ -181,8 +168,8 @@ const Index = () => {
     return (
       <div className="min-h-screen gradient-surface">
         <Header />
-        <InputModeSelector 
-          onSelectMode={handleSelectMode} 
+        <InputModeSelector
+          onSelectMode={handleSelectMode}
           onImportResume={handleImportResume}
           isAnalyzing={isAnalyzing}
           analysis={analysis}
@@ -211,7 +198,6 @@ const Index = () => {
           </Button>
 
           <div className="flex items-center gap-3">
-            {/* Format Selector */}
             <Select value={resumeFormat} onValueChange={(v) => setResumeFormat(v as ResumeFormat)}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Format" />
@@ -241,7 +227,6 @@ const Index = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Left Column - Form */}
           <div className="space-y-6">
             <JobDescriptionInput
               jobDescription={jobDescription}
@@ -257,15 +242,12 @@ const Index = () => {
             />
           </div>
 
-          {/* Right Column - Preview & Score */}
-          <div
-            className={`space-y-6 ${!showPreview ? "hidden lg:block" : ""}`}
-          >
+          <div className={`space-y-6 ${!showPreview ? "hidden lg:block" : ""}`}>
             <ATSScoreCard score={atsScore} />
 
             <div className="bg-muted/30 rounded-xl p-4 overflow-auto max-h-[800px] glass-effect">
               <div className="text-xs text-muted-foreground mb-3 flex items-center justify-between">
-                <span>Live Preview ({resumeFormat === 'standard' ? 'Standard' : 'Compact'})</span>
+                <span>Live Preview ({resumeFormat === "standard" ? "Standard" : "Compact"})</span>
                 <span>ATS-Friendly Format • 8.5" × 11"</span>
               </div>
               <div className="flex justify-center">
