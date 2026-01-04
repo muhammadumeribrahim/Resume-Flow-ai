@@ -19,6 +19,12 @@ interface ResumeFormProps {
 }
 
 export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeFormProps) => {
+  // Ensure arrays are always defined to prevent .map() crashes
+  const experience = data.experience || [];
+  const education = data.education || [];
+  const coreStrengths = data.coreStrengths || [];
+  const customSections = data.customSections || [];
+
   const updatePersonalInfo = (field: keyof ResumeData["personalInfo"], value: string) => {
     onChange({
       ...data,
@@ -30,14 +36,14 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const addExperience = () => {
     onChange({
       ...data,
-      experience: [...data.experience, createEmptyExperience()],
+      experience: [...experience, createEmptyExperience()],
     });
   };
 
   const updateExperience = (id: string, updates: Partial<ExperienceItem>) => {
     onChange({
       ...data,
-      experience: data.experience.map((exp) =>
+      experience: experience.map((exp) =>
         exp.id === id ? { ...exp, ...updates } : exp
       ),
     });
@@ -46,19 +52,19 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const removeExperience = (id: string) => {
     onChange({
       ...data,
-      experience: data.experience.filter((exp) => exp.id !== id),
+      experience: experience.filter((exp) => exp.id !== id),
     });
   };
 
   const addBullet = (expId: string) => {
-    const exp = data.experience.find((e) => e.id === expId);
+    const exp = experience.find((e) => e.id === expId);
     if (exp) {
       updateExperience(expId, { bullets: [...exp.bullets, ""] });
     }
   };
 
   const updateBullet = (expId: string, bulletIndex: number, value: string) => {
-    const exp = data.experience.find((e) => e.id === expId);
+    const exp = experience.find((e) => e.id === expId);
     if (exp) {
       const newBullets = [...exp.bullets];
       newBullets[bulletIndex] = value;
@@ -67,7 +73,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   };
 
   const removeBullet = (expId: string, bulletIndex: number) => {
-    const exp = data.experience.find((e) => e.id === expId);
+    const exp = experience.find((e) => e.id === expId);
     if (exp && exp.bullets.length > 1) {
       updateExperience(expId, {
         bullets: exp.bullets.filter((_, idx) => idx !== bulletIndex),
@@ -79,14 +85,14 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const addEducation = () => {
     onChange({
       ...data,
-      education: [...data.education, createEmptyEducation()],
+      education: [...education, createEmptyEducation()],
     });
   };
 
   const updateEducation = (id: string, updates: Partial<EducationItem>) => {
     onChange({
       ...data,
-      education: data.education.map((edu) =>
+      education: education.map((edu) =>
         edu.id === id ? { ...edu, ...updates } : edu
       ),
     });
@@ -95,7 +101,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const removeEducation = (id: string) => {
     onChange({
       ...data,
-      education: data.education.filter((edu) => edu.id !== id),
+      education: education.filter((edu) => edu.id !== id),
     });
   };
 
@@ -103,14 +109,14 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const addSkillCategory = () => {
     onChange({
       ...data,
-      coreStrengths: [...(data.coreStrengths || []), createEmptySkillCategory()],
+      coreStrengths: [...coreStrengths, createEmptySkillCategory()],
     });
   };
 
   const updateSkillCategory = (id: string, updates: Partial<SkillCategory>) => {
     onChange({
       ...data,
-      coreStrengths: (data.coreStrengths || []).map((cat) =>
+      coreStrengths: coreStrengths.map((cat) =>
         cat.id === id ? { ...cat, ...updates } : cat
       ),
     });
@@ -119,7 +125,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const removeSkillCategory = (id: string) => {
     onChange({
       ...data,
-      coreStrengths: (data.coreStrengths || []).filter((cat) => cat.id !== id),
+      coreStrengths: coreStrengths.filter((cat) => cat.id !== id),
     });
   };
 
@@ -127,14 +133,14 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const addCustomSection = () => {
     onChange({
       ...data,
-      customSections: [...(data.customSections || []), createEmptyCustomSection()],
+      customSections: [...customSections, createEmptyCustomSection()],
     });
   };
 
   const updateCustomSection = (id: string, updates: Partial<CustomSection>) => {
     onChange({
       ...data,
-      customSections: (data.customSections || []).map((section) =>
+      customSections: customSections.map((section) =>
         section.id === id ? { ...section, ...updates } : section
       ),
     });
@@ -143,22 +149,22 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   const removeCustomSection = (id: string) => {
     onChange({
       ...data,
-      customSections: (data.customSections || []).filter((section) => section.id !== id),
+      customSections: customSections.filter((section) => section.id !== id),
     });
   };
 
   const addCustomSectionItem = (sectionId: string) => {
-    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    const section = customSections.find((s) => s.id === sectionId);
     if (section) {
-      updateCustomSection(sectionId, { items: [...section.items, createEmptyCustomSectionItem()] });
+      updateCustomSection(sectionId, { items: [...(section.items || []), createEmptyCustomSectionItem()] });
     }
   };
 
   const updateCustomSectionItem = (sectionId: string, itemId: string, updates: Partial<CustomSectionItem>) => {
-    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    const section = customSections.find((s) => s.id === sectionId);
     if (section) {
       updateCustomSection(sectionId, {
-        items: section.items.map((item) =>
+        items: (section.items || []).map((item) =>
           item.id === itemId ? { ...item, ...updates } : item
         ),
       });
@@ -166,38 +172,38 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
   };
 
   const removeCustomSectionItem = (sectionId: string, itemId: string) => {
-    const section = (data.customSections || []).find((s) => s.id === sectionId);
+    const section = customSections.find((s) => s.id === sectionId);
     if (section) {
       updateCustomSection(sectionId, {
-        items: section.items.filter((item) => item.id !== itemId),
+        items: (section.items || []).filter((item) => item.id !== itemId),
       });
     }
   };
 
   const addCustomItemBullet = (sectionId: string, itemId: string) => {
-    const section = (data.customSections || []).find((s) => s.id === sectionId);
-    const item = section?.items.find((i) => i.id === itemId);
+    const section = customSections.find((s) => s.id === sectionId);
+    const item = section?.items?.find((i) => i.id === itemId);
     if (item) {
-      updateCustomSectionItem(sectionId, itemId, { bullets: [...item.bullets, ""] });
+      updateCustomSectionItem(sectionId, itemId, { bullets: [...(item.bullets || []), ""] });
     }
   };
 
   const updateCustomItemBullet = (sectionId: string, itemId: string, bulletIndex: number, value: string) => {
-    const section = (data.customSections || []).find((s) => s.id === sectionId);
-    const item = section?.items.find((i) => i.id === itemId);
+    const section = customSections.find((s) => s.id === sectionId);
+    const item = section?.items?.find((i) => i.id === itemId);
     if (item) {
-      const newBullets = [...item.bullets];
+      const newBullets = [...(item.bullets || [])];
       newBullets[bulletIndex] = value;
       updateCustomSectionItem(sectionId, itemId, { bullets: newBullets });
     }
   };
 
   const removeCustomItemBullet = (sectionId: string, itemId: string, bulletIndex: number) => {
-    const section = (data.customSections || []).find((s) => s.id === sectionId);
-    const item = section?.items.find((i) => i.id === itemId);
-    if (item && item.bullets.length > 1) {
+    const section = customSections.find((s) => s.id === sectionId);
+    const item = section?.items?.find((i) => i.id === itemId);
+    if (item && (item.bullets || []).length > 1) {
       updateCustomSectionItem(sectionId, itemId, {
-        bullets: item.bullets.filter((_, idx) => idx !== bulletIndex),
+        bullets: (item.bullets || []).filter((_, idx) => idx !== bulletIndex),
       });
     }
   };
@@ -337,7 +343,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
               Organize your skills by category (e.g., "Front-End", "Testing", "Networking/Systems")
             </p>
 
-            {(data.coreStrengths || []).map((cat, index) => (
+            {coreStrengths.map((cat, index) => (
               <div key={cat.id} className="mb-4 p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium">Category {index + 1}</span>
@@ -379,7 +385,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
         </TabsContent>
 
         <TabsContent value="experience" className="space-y-4 animate-fade-in">
-          {data.experience.map((exp, index) => (
+          {experience.map((exp, index) => (
             <Card key={exp.id} className="p-5 glass-effect">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -518,7 +524,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
         </TabsContent>
 
         <TabsContent value="education" className="space-y-4 animate-fade-in">
-          {data.education.map((edu, index) => (
+          {education.map((edu, index) => (
             <Card key={edu.id} className="p-5 glass-effect">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -610,7 +616,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
               Add custom sections like Certifications, Volunteering, Projects, Publications, Awards, etc.
             </p>
 
-            {(data.customSections || []).map((section, sectionIndex) => (
+            {customSections.map((section, sectionIndex) => (
               <div key={section.id} className="mb-6 p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 flex-1 mr-4">
@@ -632,7 +638,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                   </Button>
                 </div>
 
-                {section.items.map((item, itemIndex) => (
+                {(section.items || []).map((item, itemIndex) => (
                   <div key={item.id} className="ml-4 mb-4 p-3 bg-background/50 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium">Item {itemIndex + 1}</span>
@@ -684,7 +690,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Bullet Points (optional)</Label>
-                        {item.bullets.map((bullet, bulletIndex) => (
+                        {(item.bullets || []).map((bullet, bulletIndex) => (
                           <div key={bulletIndex} className="flex gap-2">
                             <Input
                               placeholder="Achievement or detail..."
@@ -696,7 +702,7 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                               variant="ghost"
                               size="icon"
                               onClick={() => removeCustomItemBullet(section.id, item.id, bulletIndex)}
-                              disabled={item.bullets.length <= 1}
+                              disabled={(item.bullets || []).length <= 1}
                               className="shrink-0 h-9 w-9"
                             >
                               <Trash2 className="w-3 h-3" />

@@ -74,14 +74,14 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
   doc.text(data.personalInfo.fullName.toUpperCase(), pageWidth / 2, yPos, { align: "center" });
   yPos += nameSize * 0.6;
 
-  // Contact info (centered)
+  // Contact info (centered) - use labels for links
   const contactParts = [
     data.personalInfo.location,
     data.personalInfo.phone,
     data.personalInfo.email,
-    data.personalInfo.github,
-    data.personalInfo.portfolio,
-    data.personalInfo.linkedin,
+    data.personalInfo.github ? "GitHub" : null,
+    data.personalInfo.portfolio ? "Portfolio" : null,
+    data.personalInfo.linkedin ? "LinkedIn" : null,
   ].filter(Boolean);
   doc.setFontSize(bodySize);
   doc.setFont("times", "normal");
@@ -258,14 +258,14 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
     })
   );
 
-  // Contact info
+  // Contact info - use labels for links
   const contactParts = [
     data.personalInfo.location,
     data.personalInfo.phone,
     data.personalInfo.email,
-    data.personalInfo.github,
-    data.personalInfo.portfolio,
-    data.personalInfo.linkedin,
+    data.personalInfo.github ? "GitHub" : null,
+    data.personalInfo.portfolio ? "Portfolio" : null,
+    data.personalInfo.linkedin ? "LinkedIn" : null,
   ].filter(Boolean);
 
   children.push(
