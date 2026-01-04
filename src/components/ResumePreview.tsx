@@ -35,6 +35,9 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
   const sectionSpacing = isCompact ? 'mb-[1pt]' : 'mb-[2pt]';
   const entrySpacing = 'mb-0';
 
+  const sectionUnderline =
+    "relative inline-block after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-[3px] after:h-[1.5px] after:bg-current";
+
   if (!hasContent) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -125,7 +128,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {data.summary && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-black">SUMMARY</span>
+            <span className={sectionUnderline}>SUMMARY</span>
           </h2>
           <p className={`${bodySize} ${lineHeight} text-justify mt-[3pt]`}>{data.summary}</p>
         </section>
@@ -135,7 +138,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {coreStrengths.length > 0 && coreStrengths.some(c => c.category && c.skills) && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-black">CORE STRENGTHS</span>
+            <span className={sectionUnderline}>CORE STRENGTHS</span>
           </h2>
           <ul className={`list-none m-0 p-0 ${bodySize} ${lineHeight} mt-[3pt]`}>
             {coreStrengths.filter(c => c.category && c.skills).map((cat) => (
@@ -152,7 +155,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {coreStrengths.length === 0 && skills.length > 0 && skills.some(Boolean) && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-black">SKILLS</span>
+            <span className={sectionUnderline}>SKILLS</span>
           </h2>
           <p className={`${bodySize} ${lineHeight} mt-[3pt]`}>{skills.filter(Boolean).join(" • ")}</p>
         </section>
@@ -162,7 +165,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {experience.length > 0 && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-black">EXPERIENCE</span>
+            <span className={sectionUnderline}>EXPERIENCE</span>
           </h2>
           {experience.map((exp) => {
             const startFormatted = formatDateFull(exp.startDate);
@@ -206,7 +209,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
       {education.length > 0 && (
         <section className={sectionSpacing}>
           <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-            <span className="border-b-2 border-black">EDUCATION</span>
+            <span className={sectionUnderline}>EDUCATION</span>
           </h2>
           {education.map((edu) => {
             const gradDate = formatDateFull(edu.graduationDate);
@@ -231,8 +234,7 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
           {customSections.filter(s => s.title).map((section) => (
             <section key={section.id} className={sectionSpacing}>
               <h2 className={`${sectionSize} font-bold ${entrySpacing}`}>
-                <span className="border-b-2 border-black">
-                {section.title.toUpperCase()}</span>
+                <span className={sectionUnderline}>{section.title.toUpperCase()}</span>
               </h2>
               {(section.items || []).map((item) => (
                 <div key={item.id} className={`${entrySpacing} mt-[3pt]`}>

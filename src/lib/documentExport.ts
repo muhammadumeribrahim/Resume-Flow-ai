@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle, TabStopType, TabStopPosition, convertInchesToTwip } from "docx";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle, TabStopType, TabStopPosition, convertInchesToTwip, ExternalHyperlink } from "docx";
 import { saveAs } from "file-saver";
 import { ResumeData, ResumeFormat } from "@/types/resume";
 import { formatDateFull } from "./resumeUtils";
@@ -74,18 +74,54 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
   doc.text(data.personalInfo.fullName.toUpperCase(), pageWidth / 2, yPos, { align: "center" });
   yPos += nameSize * 0.6;
 
-  // Contact info (centered) - use labels for links
-  const contactParts = [
-    data.personalInfo.location,
-    data.personalInfo.phone,
-    data.personalInfo.email,
-    data.personalInfo.github ? "GitHub" : null,
-    data.personalInfo.portfolio ? "Portfolio" : null,
-    data.personalInfo.linkedin ? "LinkedIn" : null,
-  ].filter(Boolean);
+  // Contact info (centered) - clickable labels for links
+  const normalizeUrl = (url: string | undefined | null): string | null => {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+  };
+
+  const contactSegments: Array<{ text: string; url?: string }> = [];
+  if (data.personalInfo.location) contactSegments.push({ text: data.personalInfo.location });
+  if (data.personalInfo.phone) contactSegments.push({ text: data.personalInfo.phone });
+  if (data.personalInfo.email) contactSegments.push({ text: data.personalInfo.email });
+
+  const githubUrl = normalizeUrl(data.personalInfo.github);
+  if (githubUrl) contactSegments.push({ text: "GitHub", url: githubUrl });
+
+  const portfolioUrl = normalizeUrl(data.personalInfo.portfolio);
+  if (portfolioUrl) contactSegments.push({ text: "Portfolio", url: portfolioUrl });
+
+  const linkedinUrl = normalizeUrl(data.personalInfo.linkedin);
+  if (linkedinUrl) contactSegments.push({ text: "LinkedIn", url: linkedinUrl });
+
   doc.setFontSize(bodySize);
   doc.setFont("times", "normal");
-  doc.text(contactParts.join(" | "), pageWidth / 2, yPos, { align: "center" });
+
+  const separator = " | ";
+  const sepWidth = doc.getTextWidth(separator);
+  const totalWidth =
+    contactSegments.reduce((sum, seg) => sum + doc.getTextWidth(seg.text), 0) +
+    (contactSegments.length > 1 ? sepWidth * (contactSegments.length - 1) : 0);
+
+  let xPos = (pageWidth - totalWidth) / 2;
+  contactSegments.forEach((seg, idx) => {
+    if (idx > 0) {
+      doc.text(separator, xPos, yPos);
+      xPos += sepWidth;
+    }
+
+    if (seg.url) {
+      doc.textWithLink(seg.text, xPos, yPos, { url: seg.url });
+      doc.textWithLink(seg.text, xPos, yPos, { url: seg.url });
+    } else {
+      doc.text(seg.text, xPos, yPos);
+    }
+
+    xPos += doc.getTextWidth(seg.text);
+  });
+
   yPos += lineHeight + sectionSpacing;
 
   // Summary
@@ -258,25 +294,56 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
     })
   );
 
-  // Contact info - use labels for links
-  const contactParts = [
-    data.personalInfo.location,
-    data.personalInfo.phone,
-    data.personalInfo.email,
-    data.personalInfo.github ? "GitHub" : null,
-    data.personalInfo.portfolio ? "Portfolio" : null,
-    data.personalInfo.linkedin ? "LinkedIn" : null,
-  ].filter(Boolean);
+  // Contact info - clickable labels for links
+  const normalizeUrl = (url: string | undefined | null): string | null => {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+  };
+
+  const contactSegments: Array<{ text: string; url?: string }> = [];
+  if (data.personalInfo.location) contactSegments.push({ text: data.personalInfo.location });
+  if (data.personalInfo.phone) contactSegments.push({ text: data.personalInfo.phone });
+  if (data.personalInfo.email) contactSegments.push({ text: data.personalInfo.email });
+
+  const githubUrl = normalizeUrl(data.personalInfo.github);
+  if (githubUrl) contactSegments.push({ text: "GitHub", url: githubUrl });
+
+  const portfolioUrl = normalizeUrl(data.personalInfo.portfolio);
+  if (portfolioUrl) contactSegments.push({ text: "Portfolio", url: portfolioUrl });
+
+  const linkedinUrl = normalizeUrl(data.personalInfo.linkedin);
+  if (linkedinUrl) contactSegments.push({ text: "LinkedIn", url: linkedinUrl });
+
+  const contactChildren: Array<TextRun | ExternalHyperlink> = [];
+  contactSegments.forEach((seg, idx) => {
+    if (idx > 0) {
+      contactChildren.push(new TextRun({ text: " | ", size: bodySize, font: "Times New Roman" }));
+    }
+
+    if (seg.url) {
+      contactChildren.push(
+        new ExternalHyperlink({
+          link: seg.url,
+          children: [
+            new TextRun({
+              text: seg.text,
+              style: "Hyperlink",
+              size: bodySize,
+              font: "Times New Roman",
+            }),
+          ],
+        })
+      );
+    } else {
+      contactChildren.push(new TextRun({ text: seg.text, size: bodySize, font: "Times New Roman" }));
+    }
+  });
 
   children.push(
     new Paragraph({
-      children: [
-        new TextRun({
-          text: contactParts.join(" | "),
-          size: bodySize,
-          font: "Times New Roman",
-        }),
-      ],
+      children: contactChildren,
       alignment: AlignmentType.CENTER,
       spacing: { after: sectionSpacing * 2 },
     })
