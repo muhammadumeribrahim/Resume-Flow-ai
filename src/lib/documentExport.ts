@@ -54,18 +54,25 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
     });
   };
 
-  // Section header with black underline
+  // Section header with black underline (no overlap with body text)
   const addSectionHeader = (title: string) => {
     yPos += sectionSpacing;
-    checkPageBreak(lineHeight + 4);
     doc.setFontSize(sectionSize);
     doc.setFont("times", "bold");
-    doc.text(title.toUpperCase(), marginSide, yPos);
-    yPos += 2;
-    doc.setDrawColor(0, 0, 0); // Black color
+
+    // Keep extra room so underline never collides with the next paragraph
+    checkPageBreak(lineHeight * 2);
+
+    const headerY = yPos;
+    doc.text(title.toUpperCase(), marginSide, headerY);
+
+    const underlineY = headerY + 4;
+    doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
-    doc.line(marginSide, yPos, pageWidth - marginSide, yPos);
-    yPos += sectionSpacing + 2;
+    doc.line(marginSide, underlineY, pageWidth - marginSide, underlineY);
+
+    // Start next text safely below the underline
+    yPos = underlineY + lineHeight;
   };
 
   // Header - Name (centered)
@@ -105,6 +112,12 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
     contactSegments.reduce((sum, seg) => sum + doc.getTextWidth(seg.text), 0) +
     (contactSegments.length > 1 ? sepWidth * (contactSegments.length - 1) : 0);
 
+  const addPdfLink = (text: string, url: string, x: number, y: number) => {
+    doc.text(text, x, y);
+    const w = doc.getTextWidth(text);
+    doc.link(x, y - bodySize, w, lineHeight, { url });
+  };
+
   let xPos = (pageWidth - totalWidth) / 2;
   contactSegments.forEach((seg, idx) => {
     if (idx > 0) {
@@ -113,8 +126,7 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
     }
 
     if (seg.url) {
-      doc.textWithLink(seg.text, xPos, yPos, { url: seg.url });
-      doc.textWithLink(seg.text, xPos, yPos, { url: seg.url });
+      addPdfLink(seg.text, seg.url, xPos, yPos);
     } else {
       doc.text(seg.text, xPos, yPos);
     }
@@ -161,27 +173,37 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
     addSectionHeader("Experience");
     data.experience.forEach((exp) => {
       checkPageBreak(lineHeight * 3);
-      
+
+      const startFormatted = formatDateFull(exp.startDate);
+      const endFormatted = exp.current ? "Present" : formatDateFull(exp.endDate);
+      const hasDateRange = Boolean(startFormatted || endFormatted);
+      const dateDisplay = hasDateRange
+        ? `${startFormatted || ""}${startFormatted && endFormatted ? " - " : ""}${endFormatted || ""}`
+        : "";
+
       // Company and dates - bold
       doc.setFontSize(subheaderSize);
       doc.setFont("times", "bold");
       doc.text(exp.company, marginSide, yPos);
-      const dates = `${formatDateFull(exp.startDate)} - ${exp.current ? "Present" : formatDateFull(exp.endDate)}`;
-      doc.setFontSize(bodySize);
-      doc.text(dates, pageWidth - marginSide, yPos, { align: "right" });
+      if (dateDisplay) {
+        doc.setFontSize(bodySize);
+        doc.text(dateDisplay, pageWidth - marginSide, yPos, { align: "right" });
+      }
       yPos += lineHeight;
 
       // Job title and location - bold
       doc.setFontSize(bodySize);
       doc.setFont("times", "bold");
       doc.text(exp.jobTitle, marginSide, yPos);
-      const locationText = `${exp.location}${exp.workType ? ` | ${exp.workType}` : ""}`;
-      doc.text(locationText, pageWidth - marginSide, yPos, { align: "right" });
+      const locationDisplay = [exp.location, exp.workType].filter(Boolean).join(" | ");
+      if (locationDisplay) {
+        doc.text(locationDisplay, pageWidth - marginSide, yPos, { align: "right" });
+      }
       yPos += lineHeight;
 
       // Bullets - normal
       doc.setFont("times", "normal");
-      exp.bullets.filter(Boolean).forEach((bullet) => {
+      (exp.bullets || []).filter(Boolean).forEach((bullet) => {
         const bulletText = `• ${bullet}`;
         const lines = doc.splitTextToSize(bulletText, contentWidth - 10);
         lines.forEach((line: string, idx: number) => {
@@ -404,44 +426,59 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
   // Experience
   if (data.experience.length > 0) {
     addSectionHeader("Experience");
+
+    // Right tab stop aligned to the usable content width (8.5" - 0.5" - 0.5" = 7.5")
+    const rightTabPos = convertInchesToTwip(7.5);
+
     data.experience.forEach((exp) => {
-      // Company and dates - bold
+      const startFormatted = formatDateFull(exp.startDate);
+      const endFormatted = exp.current ? "Present" : formatDateFull(exp.endDate);
+      const hasDateRange = Boolean(startFormatted || endFormatted);
+      const dateDisplay = hasDateRange
+        ? `${startFormatted || ""}${startFormatted && endFormatted ? " - " : ""}${endFormatted || ""}`
+        : "";
+
+      const locationDisplay = [exp.location, exp.workType].filter(Boolean).join(" | ");
+      const bullets = (exp.bullets || []).filter(Boolean);
+
+      // Company and dates
       children.push(
         new Paragraph({
           children: [
             new TextRun({ text: exp.company, bold: true, size: subheaderSize, font: "Times New Roman" }),
-            new TextRun({ text: `\t${formatDateFull(exp.startDate)} - ${exp.current ? "Present" : formatDateFull(exp.endDate)}`, bold: true, size: bodySize, font: "Times New Roman" }),
+            ...(dateDisplay
+              ? [new TextRun({ text: `\t${dateDisplay}`, bold: true, size: bodySize, font: "Times New Roman" })]
+              : []),
           ],
-          tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+          tabStops: [{ type: TabStopType.RIGHT, position: rightTabPos }],
+          spacing: { after: 0 },
         })
       );
 
-      // Title and location - bold
+      // Title and location
       children.push(
         new Paragraph({
           children: [
             new TextRun({ text: exp.jobTitle, bold: true, size: bodySize, font: "Times New Roman" }),
-            new TextRun({ text: `\t${exp.location}${exp.workType ? ` | ${exp.workType}` : ""}`, bold: true, size: bodySize, font: "Times New Roman" }),
+            ...(locationDisplay
+              ? [new TextRun({ text: `\t${locationDisplay}`, bold: true, size: bodySize, font: "Times New Roman" })]
+              : []),
           ],
-          tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-          spacing: { after: 20 },
+          tabStops: [{ type: TabStopType.RIGHT, position: rightTabPos }],
+          spacing: { after: bullets.length > 0 ? 0 : sectionSpacing },
         })
       );
 
       // Bullets
-      exp.bullets.filter(Boolean).forEach((bullet) => {
+      bullets.forEach((bullet, idx) => {
         children.push(
           new Paragraph({
-            children: [
-              new TextRun({ text: `• ${bullet}`, size: bodySize, font: "Times New Roman" }),
-            ],
+            children: [new TextRun({ text: `• ${bullet}`, size: bodySize, font: "Times New Roman" })],
             indent: { left: 180 },
-            spacing: { after: 0 },
+            spacing: { after: idx === bullets.length - 1 ? sectionSpacing : 0 },
           })
         );
       });
-
-      children.push(new Paragraph({ spacing: { after: sectionSpacing } }));
     });
   }
 

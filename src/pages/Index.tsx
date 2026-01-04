@@ -29,7 +29,7 @@ const Index = () => {
   const [atsScore, setAtsScore] = useState<ATSScore>({
     overall: 0,
     keywordMatch: 0,
-    formatting: 100,
+    formatting: 0,
     structure: 0,
     suggestions: [
       "Add a professional summary to highlight key qualifications",
