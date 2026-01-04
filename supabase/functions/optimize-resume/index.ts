@@ -5,6 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface SkillCategory {
+  id: string;
+  category: string;
+  skills: string;
+}
+
 interface ResumeData {
   personalInfo: {
     fullName: string;
@@ -12,13 +18,17 @@ interface ResumeData {
     phone: string;
     location: string;
     linkedin?: string;
+    github?: string;
+    portfolio?: string;
   };
   summary: string;
+  coreStrengths?: SkillCategory[];
   experience: {
     id: string;
     jobTitle: string;
     company: string;
     location: string;
+    workType?: string;
     startDate: string;
     endDate: string;
     current: boolean;
@@ -27,6 +37,7 @@ interface ResumeData {
   education: {
     id: string;
     degree: string;
+    field?: string;
     institution: string;
     location: string;
     graduationDate: string;
@@ -46,67 +57,94 @@ serve(async (req) => {
       jobDescription?: string;
     };
 
-    console.log('Received resume optimization request');
+    console.log('Received resume optimization request for:', resumeData.personalInfo.fullName);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert ATS Resume Architect and U.S. recruiter with deep knowledge of Applicant Tracking Systems. Your job is to optimize resumes to achieve 90-100% ATS match scores.
+    const systemPrompt = `You are an expert ATS Resume Architect and senior U.S. recruiter with 15+ years of experience. Your job is to create highly optimized resumes that achieve 90-100% ATS match scores and maximize interview callbacks.
 
-OPTIMIZATION RULES:
-1. Professional Summary: Write a concise 2-3 sentence summary highlighting key qualifications, years of experience, and career focus. Include relevant keywords from the job description if provided.
+RESUME FORMAT REQUIREMENTS:
+1. Use this exact structure: SUMMARY → CORE STRENGTHS → EXPERIENCE → EDUCATION
+2. Section headers in ALL CAPS with gold underline styling
 
-2. Experience Bullets: Each bullet MUST follow this formula:
-   - Start with a strong action verb (Led, Developed, Implemented, Achieved, etc.)
-   - Include a relevant skill or tool
-   - Describe the specific task or responsibility
-   - End with a quantified result (percentage improvement, dollar amount, time saved, etc.)
-   - If no metric provided, infer a realistic, role-appropriate metric
+SUMMARY OPTIMIZATION:
+- Write 3-4 impactful sentences
+- Start with a professional title/identity (e.g., "Creative Technologist", "Results-driven Software Engineer")
+- Include years of experience and key domains
+- Mention 3-5 most relevant technical skills
+- End with what you're known for or your working style
 
-3. Skills Section: Extract and organize skills into categories (Technical Skills, Tools, Soft Skills). Prioritize keywords that match the job description.
+CORE STRENGTHS FORMAT (CRITICAL):
+- Organize skills into 4-6 categories
+- Categories should be: "Front-End", "Web + Platforms", "Testing", "Networking/Systems", "Hardware", "Creative Tech Interest" (adjust based on the person's background)
+- Format: "Category Name: skill1, skill2, skill3, skill4"
+- Include tools, technologies, and methodologies
 
-4. ATS Formatting Rules:
-   - Use standard section headings (Professional Summary, Skills, Professional Experience, Education)
-   - Reverse chronological order
-   - No tables, columns, graphics, or special characters
-   - Standard fonts (Times New Roman, Arial)
-   - Simple bullet points
+EXPERIENCE BULLETS (CRITICAL - MUST FOLLOW):
+Each bullet MUST:
+1. Start with a STRONG action verb (Led, Built, Developed, Implemented, Supported, Coordinated, Translated, Performed)
+2. Describe the specific work/project
+3. Include tools, technologies, or methods used
+4. End with a measurable outcome or impact
+5. Be 1-2 lines maximum
 
-5. Keyword Optimization: If a job description is provided, identify and naturally incorporate key terms, required skills, and responsibilities without keyword stuffing.
+Example bullets:
+- "Built and maintained client-facing web experiences in WordPress, implementing responsive UI sections and interactive components focused on stability and clear UX."
+- "Supported a recurring release cadence by running regression checks, validating fixes, and documenting bugs with reproducible steps, expected vs actual results, and post-fix verification."
+- "Led a website upgrade that replaced a static contact page with an email-routed contact workflow and validated end-to-end submission handling across devices."
 
-Return a JSON object with this exact structure:
+ATS KEYWORD OPTIMIZATION:
+${jobDescription ? `Analyze this job description and incorporate relevant keywords naturally:
+"${jobDescription}"` : 'Optimize for general ATS systems and common industry keywords.'}
+
+Return a JSON object with this EXACT structure:
 {
-  "optimizedSummary": "The optimized professional summary",
-  "optimizedSkills": ["skill1", "skill2", ...],
+  "optimizedSummary": "Full professional summary paragraph",
+  "optimizedCoreStrengths": [
+    {"id": "cat1", "category": "Front-End", "skills": "HTML, CSS, JavaScript, TypeScript, React"},
+    {"id": "cat2", "category": "Web + Platforms", "skills": "REST APIs, JSON, WordPress, Node"},
+    {"id": "cat3", "category": "Testing", "skills": "QA workflows, test plans, regression/UAT, performance testing, form validation"},
+    {"id": "cat4", "category": "Networking/Systems", "skills": "TCP/IP, DNS, DHCP fundamentals, Wi-Fi troubleshooting, VPN basics"},
+    {"id": "cat5", "category": "Hardware", "skills": "peripherals, cables/displays, printers, basic workstation setup and triage"}
+  ],
   "optimizedExperience": [
     {
-      "id": "original-id",
-      "optimizedBullets": ["optimized bullet 1", "optimized bullet 2", ...]
+      "id": "original-experience-id",
+      "optimizedBullets": [
+        "First optimized bullet following the formula",
+        "Second optimized bullet with action verb and outcome",
+        "Third optimized bullet with specific tools mentioned"
+      ]
     }
   ],
   "atsScore": {
-    "overall": 95,
+    "overall": 94,
     "keywordMatch": 92,
     "formatting": 100,
     "structure": 95,
-    "suggestions": ["suggestion 1", "suggestion 2"]
+    "suggestions": ["Add more quantified metrics to experience bullets", "Include certifications if available"]
   },
-  "extractedKeywords": ["keyword1", "keyword2", ...]
+  "extractedKeywords": ["react", "wordpress", "qa", "agile", "typescript"]
 }`;
 
-    const userMessage = `Please optimize this resume for ATS systems:
+    const userMessage = `Optimize this resume data for maximum ATS compatibility and interview callbacks:
 
-RESUME DATA:
+CURRENT RESUME DATA:
 ${JSON.stringify(resumeData, null, 2)}
 
-${jobDescription ? `TARGET JOB DESCRIPTION:
-${jobDescription}` : 'No specific job description provided - optimize for general applicability.'}
+Requirements:
+1. Create a compelling professional summary
+2. Organize skills into Core Strengths categories
+3. Rewrite ALL experience bullets following the action verb + task + tool + outcome formula
+4. Each position should have 3-5 strong bullets
+5. Ensure ATS-friendly formatting throughout
 
-Return ONLY the JSON object, no other text.`;
+Return ONLY the JSON object, no markdown or extra text.`;
 
-    console.log('Calling AI gateway for optimization');
+    console.log('Calling AI gateway for full resume optimization');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -120,7 +158,6 @@ Return ONLY the JSON object, no other text.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
         ],
-        temperature: 0.7,
       }),
     });
 
@@ -152,7 +189,7 @@ Return ONLY the JSON object, no other text.`;
 
     console.log('AI response received, parsing JSON');
 
-    // Parse the JSON response, handling potential markdown code blocks
+    // Parse the JSON response
     let cleanedContent = content.trim();
     if (cleanedContent.startsWith('```json')) {
       cleanedContent = cleanedContent.slice(7);

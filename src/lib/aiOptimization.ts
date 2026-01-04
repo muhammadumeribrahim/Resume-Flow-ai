@@ -1,9 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { ResumeData, ATSScore } from "@/types/resume";
+import { ResumeData, ATSScore, SkillCategory } from "@/types/resume";
 
 interface OptimizationResult {
   optimizedSummary: string;
-  optimizedSkills: string[];
+  optimizedCoreStrengths?: { id: string; category: string; skills: string }[];
+  optimizedSkills?: string[];
   optimizedExperience: {
     id: string;
     optimizedBullets: string[];
@@ -35,18 +36,36 @@ export const applyOptimizations = (
   currentData: ResumeData,
   optimizations: OptimizationResult
 ): ResumeData => {
+  // Update experience bullets
   const updatedExperience = currentData.experience.map((exp) => {
     const optimizedExp = optimizations.optimizedExperience.find((o) => o.id === exp.id);
-    if (optimizedExp) {
+    if (optimizedExp && optimizedExp.optimizedBullets) {
       return { ...exp, bullets: optimizedExp.optimizedBullets };
     }
     return exp;
   });
 
+  // Update core strengths if provided
+  let updatedCoreStrengths = currentData.coreStrengths || [];
+  if (optimizations.optimizedCoreStrengths && optimizations.optimizedCoreStrengths.length > 0) {
+    updatedCoreStrengths = optimizations.optimizedCoreStrengths.map((cs) => ({
+      id: cs.id || crypto.randomUUID(),
+      category: cs.category,
+      skills: cs.skills,
+    }));
+  }
+
+  // Update skills array for backward compatibility
+  let updatedSkills = currentData.skills;
+  if (optimizations.optimizedSkills) {
+    updatedSkills = optimizations.optimizedSkills;
+  }
+
   return {
     ...currentData,
-    summary: optimizations.optimizedSummary,
-    skills: optimizations.optimizedSkills,
+    summary: optimizations.optimizedSummary || currentData.summary,
+    coreStrengths: updatedCoreStrengths,
+    skills: updatedSkills,
     experience: updatedExperience,
   };
 };

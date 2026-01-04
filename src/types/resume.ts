@@ -5,11 +5,20 @@ export interface ResumeData {
     phone: string;
     location: string;
     linkedin?: string;
+    github?: string;
+    portfolio?: string;
   };
   summary: string;
+  coreStrengths: SkillCategory[];
   experience: ExperienceItem[];
   education: EducationItem[];
-  skills: string[];
+  skills: string[]; // Keep for backward compatibility
+}
+
+export interface SkillCategory {
+  id: string;
+  category: string;
+  skills: string;
 }
 
 export interface ExperienceItem {
@@ -17,6 +26,7 @@ export interface ExperienceItem {
   jobTitle: string;
   company: string;
   location: string;
+  workType?: string; // Remote, Hybrid/Remote, On-site
   startDate: string;
   endDate: string;
   current: boolean;
@@ -26,6 +36,7 @@ export interface ExperienceItem {
 export interface EducationItem {
   id: string;
   degree: string;
+  field?: string;
   institution: string;
   location: string;
   graduationDate: string;
