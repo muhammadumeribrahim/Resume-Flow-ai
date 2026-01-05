@@ -7,6 +7,9 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import SavedResumes from "./pages/SavedResumes";
+import JobTracker from "./pages/JobTracker";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +28,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/saved-resumes"
+              element={
+                <ProtectedRoute>
+                  <SavedResumes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/job-tracker"
+              element={
+                <ProtectedRoute>
+                  <JobTracker />
                 </ProtectedRoute>
               }
             />

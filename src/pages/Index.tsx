@@ -13,20 +13,35 @@ import { analyzeImportedResume, applyOptimizations, optimizeResume } from "@/lib
 import { generateDOCX, generatePDF } from "@/lib/documentExport";
 import { extractResumeTextFromFile } from "@/lib/resumeImport";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
+  const { user } = useAuth();
   const [mode, setMode] = useState<"select" | "form" | "tailor">("select");
   const [resumeData, setResumeData] = useState<ResumeData>(createEmptyResume());
   const [jobDescription, setJobDescription] = useState("");
   const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [resumeFormat, setResumeFormat] = useState<ResumeFormat>("standard");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [resumeName, setResumeName] = useState("");
   const [atsScore, setAtsScore] = useState<ATSScore>({
     overall: 0,
     keywordMatch: 0,
@@ -174,6 +189,40 @@ const Index = () => {
     }
   };
 
+  const handleSaveResume = async () => {
+    if (!resumeData.personalInfo.fullName) {
+      toast.error("Please add your name before saving");
+      return;
+    }
+    if (!resumeName.trim()) {
+      toast.error("Please enter a name for this resume");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from("saved_resumes").insert([{
+        user_id: user?.id as string,
+        name: resumeName.trim(),
+        resume_data: resumeData as any,
+        ats_score: atsScore.overall,
+        target_job: jobDescription ? jobDescription.slice(0, 200) : null,
+      }]);
+
+      if (error) throw error;
+
+      toast.success("Resume saved successfully!");
+      setSaveDialogOpen(false);
+      setResumeName("");
+    } catch (error) {
+      console.error("Error saving resume:", error);
+      toast.error("Failed to save resume");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (mode === "select") {
     return (
       <div className="min-h-screen gradient-surface">
@@ -239,6 +288,32 @@ const Index = () => {
               {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               {showPreview ? "Hide Preview" : "Show Preview"}
             </Button>
+            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" size="sm" disabled={!resumeData.personalInfo.fullName}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  Save
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Save Resume</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Resume Name</Label>
+                    <Input
+                      placeholder="e.g., Software Engineer Resume"
+                      value={resumeName}
+                      onChange={(e) => setResumeName(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleSaveResume} disabled={isSaving} className="w-full">
+                    {isSaving ? "Saving..." : "Save Resume"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <ExportButtons
               onExportPDF={handleExportPDF}
               onExportDOCX={handleExportDOCX}
