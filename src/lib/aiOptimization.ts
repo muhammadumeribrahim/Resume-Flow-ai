@@ -20,6 +20,10 @@ interface ImportAnalysisResult {
   extractedKeywords?: string[];
 }
 
+interface CompressResult {
+  compressedResumeData: ResumeData;
+}
+
 export const optimizeResume = async (
   resumeData: ResumeData,
   jobDescription?: string
@@ -72,6 +76,22 @@ export const tailorResumeToJob = async (
   }
 
   return data;
+};
+
+export const compressResumeToOnePage = async (resumeData: ResumeData): Promise<ResumeData> => {
+  const { data, error } = await supabase.functions.invoke<CompressResult>("optimize-resume", {
+    body: { action: "compress", resumeData },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to compress resume");
+  }
+
+  if (!data?.compressedResumeData) {
+    throw new Error("No data returned from compression");
+  }
+
+  return data.compressedResumeData;
 };
 
 export const applyOptimizations = (

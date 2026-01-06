@@ -145,35 +145,66 @@ serve(async (req) => {
 
       console.log("Import analysis request received (chars):", rawResumeText.length);
 
-      const systemPrompt = `You are an expert U.S. resume parser and ATS evaluator.
+      const systemPrompt = `You are an expert U.S. resume parser and ATS evaluator with 20+ years of HR/recruiting experience.
 
 GOAL:
 1) Extract the candidate's information from raw resume text and map it into the provided JSON schema.
-2) Provide a concise ATS-oriented analysis (weaknesses, improvements, missing keywords) and an ATS score.
+2) STANDARDIZE and ORGANIZE the content following our strict resume format.
+3) Provide a concise ATS-oriented analysis (weaknesses, improvements, missing keywords) and an ATS score.
 
-RULES:
+==============================================================================
+CRITICAL: STRICT SECTION ORDERING (ALWAYS FOLLOW THIS ORDER)
+==============================================================================
+Our resume format has a FIXED section order. Regardless of how messy or different the input resume is, YOU MUST organize the output in this exact order:
+
+1. PERSONAL INFO (header)
+2. SUMMARY (professional summary - 3-4 sentences max)
+3. CORE STRENGTHS (categorized skills - NEVER a long flat list)
+4. EXPERIENCE (work history, chronological - most recent first)
+5. EDUCATION (degrees, certifications that are formal education)
+6. CUSTOM SECTIONS (in this priority order if they exist):
+   a. Certifications / Licenses / Professional Certifications
+   b. Projects / Technical Projects / Academic Projects
+   c. Awards / Honors / Achievements
+   d. Volunteering / Community Service
+   e. Publications / Research
+   f. Languages
+   g. Any other sections at the end
+
+==============================================================================
+CRITICAL: SMART SKILL CATEGORIZATION (NO MESSY SKILL LISTS!)
+==============================================================================
+If the input resume has a long unorganized list of skills, you MUST:
+1. Analyze all skills and categorize them into 4-6 logical categories
+2. Each category should have 4-8 relevant skills (not too many!)
+3. Category examples by profession:
+   - Software Engineer: "Languages", "Frameworks", "Cloud & DevOps", "Databases", "Tools"
+   - Marketing: "Digital Marketing", "Analytics", "Content", "Tools & Platforms"
+   - Finance: "Financial Analysis", "Software", "Reporting", "Compliance"
+   - Healthcare: "Clinical Skills", "EMR Systems", "Patient Care", "Certifications"
+
+SKILL FORMATTING RULES:
+- NEVER output more than 6 skill categories
+- NEVER output more than 8 skills per category
+- Prioritize most relevant/impressive skills first
+- Group similar skills together intelligently
+- Remove redundant/duplicate skills
+
+==============================================================================
+GENERAL PARSING RULES
+==============================================================================
 - Return ONLY valid JSON.
 - If a field is missing, use an empty string "" (or [] for arrays).
 - Do NOT hallucinate employers, degrees, or dates. If uncertain, leave blank.
 - Preserve bullet points as clean sentences.
 - Use single-column American resume conventions.
+- Clean up messy formatting, fix obvious typos in section headers.
 
-CRITICAL - CUSTOM SECTIONS DETECTION:
-You MUST scan the resume for ANY sections beyond the standard ones (Summary, Experience, Education, Skills).
-Common examples include but are not limited to:
-- Projects / Academic Projects / Personal Projects / Technical Projects
-- Certifications / Licenses / Professional Certifications
-- Awards / Honors / Achievements / Recognition
-- Volunteering / Community Service / Volunteer Experience
-- Publications / Research / Papers
-- Languages / Language Proficiency
-- Professional Memberships / Affiliations
-- Interests / Hobbies (if professionally relevant)
-- Leadership / Activities
-- Training / Professional Development
-
-For EACH additional section found, you MUST create an entry in customSections array.
-DO NOT leave any resume content unaccounted for. Every piece of information must be captured.
+==============================================================================
+CUSTOM SECTIONS DETECTION (IMPORTANT)
+==============================================================================
+Scan for ANY sections beyond the standard ones. Map them to customSections.
+DO NOT leave any resume content unaccounted for.
 
 OUTPUT JSON SHAPE (EXACT):
 {
@@ -189,7 +220,7 @@ OUTPUT JSON SHAPE (EXACT):
     },
     "summary": "",
     "coreStrengths": [
-      {"id": "cat1", "category": "", "skills": ""}
+      {"id": "cat1", "category": "Category Name", "skills": "skill1, skill2, skill3, skill4"}
     ],
     "experience": [
       {
@@ -218,7 +249,7 @@ OUTPUT JSON SHAPE (EXACT):
     "customSections": [
       {
         "id": "custom1",
-        "title": "Section Title (e.g., Projects, Certifications, Awards)",
+        "title": "Section Title (e.g., Certifications, Projects, Awards)",
         "items": [
           {
             "id": "item1",
@@ -249,7 +280,7 @@ OUTPUT JSON SHAPE (EXACT):
   "extractedKeywords": [""]
 }`;
 
-      const userMessage = `RAW RESUME TEXT (extract + analyze):\n\n${rawResumeText}`;
+      const userMessage = `RAW RESUME TEXT (extract + analyze + organize following our strict section order):\n\n${rawResumeText}`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -307,13 +338,43 @@ OUTPUT JSON SHAPE (EXACT):
 
       console.log("Tailor request received - resume chars:", rawResumeText.length, "job chars:", jobDescription.length);
 
-      const systemPrompt = `You are an expert U.S. resume parser, ATS optimizer, and career coach.
+      const systemPrompt = `You are an expert U.S. resume parser, ATS optimizer, and career coach with 20+ years of experience.
 
 GOAL:
 1) Parse the candidate's raw resume text into structured JSON.
 2) Analyze the target job description and extract key requirements, skills, and keywords.
-3) Rewrite the resume to be well-aligned for this specific job while maintaining STRICT HONESTY.
-4) Provide an ATS score reflecting how well the tailored resume matches the job.
+3) STANDARDIZE the resume following our STRICT section order and format.
+4) Rewrite the resume to be well-aligned for this specific job while maintaining STRICT HONESTY.
+5) Provide an ATS score reflecting how well the tailored resume matches the job.
+
+==============================================================================
+CRITICAL: STRICT SECTION ORDERING (ALWAYS FOLLOW THIS ORDER)
+==============================================================================
+Our resume format has a FIXED section order. Regardless of how messy or different the input resume is, YOU MUST organize the output in this exact order:
+
+1. PERSONAL INFO (header)
+2. SUMMARY (professional summary - 3-4 sentences max)
+3. CORE STRENGTHS (categorized skills - NEVER a long flat list)
+4. EXPERIENCE (work history, chronological - most recent first)
+5. EDUCATION (degrees, certifications that are formal education)
+6. CUSTOM SECTIONS (in this priority order if they exist):
+   a. Certifications / Licenses
+   b. Projects / Technical Projects
+   c. Awards / Honors
+   d. Volunteering
+   e. Publications / Research
+   f. Languages
+   g. Any other sections at the end
+
+==============================================================================
+CRITICAL: SMART SKILL CATEGORIZATION (NO MESSY SKILL LISTS!)
+==============================================================================
+If the input resume has a long unorganized list of skills, you MUST:
+1. Analyze all skills and categorize them into 4-6 logical categories
+2. Each category should have 4-8 relevant skills (prioritize job-relevant ones!)
+3. NEVER output more than 6 skill categories
+4. NEVER output more than 8 skills per category
+5. Put job-description-matching skills FIRST in each category
 
 ==============================================================================
 CRITICAL RULES - ABSOLUTE NON-NEGOTIABLES (NEVER VIOLATE THESE):
@@ -330,25 +391,11 @@ CRITICAL RULES - ABSOLUTE NON-NEGOTIABLES (NEVER VIOLATE THESE):
 WHAT YOU CAN AND SHOULD DO:
 ==============================================================================
 1. REWORD bullet points to use terminology and keywords from the job description
-   - Example: "Helped with software development" → "Contributed to software development lifecycle using Agile methodology"
-   
 2. EMPHASIZE transferable skills that align with the target role
-   - If IT Support is applying for Project Management, highlight any coordination, stakeholder communication, or timeline management they did
-   
 3. ADD relevant tools/technologies the candidate LIKELY used based on their role context
-   - An IT Support person likely used ticketing systems, so "Jira" or "ServiceNow" could be added if reasonable
-   - Only add tools that are standard for their stated role
-   
 4. REORDER bullets to put the most job-relevant achievements first
-
 5. REWRITE the summary to position their EXISTING experience toward the target role
-   - Frame their background in terms the target role values
-
-6. REORGANIZE skills/core strengths to prioritize job-relevant categories
-
-7. BRIDGE experience gaps with honest language
-   - "Cross-functional collaboration" instead of fabricating PM experience
-   - "Led implementation projects" if they actually managed implementations
+6. REORGANIZE skills into proper categories, prioritizing job-relevant ones
 
 ==============================================================================
 CUSTOM SECTIONS - CRITICAL:
@@ -356,7 +403,7 @@ CUSTOM SECTIONS - CRITICAL:
 Scan for ANY sections beyond standard ones (Summary, Experience, Education):
 - Projects, Certifications, Awards, Volunteering, Publications, Languages, etc.
 - Create entries in customSections for EACH found
-- DO NOT leave any resume content unaccounted for
+- Order them according to the priority list above
 
 JOB DESCRIPTION TO TARGET:
 """
@@ -377,7 +424,7 @@ OUTPUT JSON SHAPE (EXACT):
     },
     "summary": "Tailored summary positioning candidate for this role using their ACTUAL experience",
     "coreStrengths": [
-      {"id": "cat1", "category": "Category matching job requirements", "skills": "relevant, skills, from, candidate's, actual, background"}
+      {"id": "cat1", "category": "Category matching job requirements", "skills": "relevant, skills, from, candidate (max 8)"}
     ],
     "experience": [
       {
@@ -406,7 +453,7 @@ OUTPUT JSON SHAPE (EXACT):
     "customSections": [
       {
         "id": "custom1",
-        "title": "Projects/Certifications/Awards/etc.",
+        "title": "Certifications/Projects/Awards/etc.",
         "items": [
           {
             "id": "item1",
@@ -419,7 +466,7 @@ OUTPUT JSON SHAPE (EXACT):
         ]
       }
     ],
-    "skills": ["skill matching job requirements that candidate ACTUALLY has"]
+    "skills": []
   },
   "analysis": {
     "weaknesses": ["Honest gaps between candidate and job requirements"],
@@ -437,7 +484,7 @@ OUTPUT JSON SHAPE (EXACT):
   "extractedKeywords": ["keywords", "from", "job", "description"]
 }`;
 
-      const userMessage = `RAW RESUME TEXT (parse and tailor for the job description above - remember: NO FABRICATION, only reword and emphasize existing experience):\n\n${rawResumeText}`;
+      const userMessage = `RAW RESUME TEXT (parse, organize following our strict section order, and tailor for the job description above - remember: NO FABRICATION, only reword and emphasize existing experience):\n\n${rawResumeText}`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -489,6 +536,109 @@ OUTPUT JSON SHAPE (EXACT):
     }
 
     // -----------------------------
+    // COMPRESS mode: Compress resume to fit one page
+    // -----------------------------
+    if (body?.action === "compress" && body?.resumeData) {
+      const resumeData = body.resumeData as ResumeData;
+
+      console.log("Compress request received for:", resumeData?.personalInfo?.fullName);
+
+      const systemPrompt = `You are an expert resume editor specializing in condensing resumes to fit on ONE PAGE while preserving maximum impact.
+
+GOAL: Compress this resume to fit on a single 8.5" x 11" page (~500-600 words max) while preserving the MOST IMPORTANT information.
+
+==============================================================================
+COMPRESSION RULES (PRIORITY ORDER):
+==============================================================================
+1. SUMMARY: Shorten to 2 concise sentences that capture key value proposition
+2. CORE STRENGTHS: Keep max 4 categories, max 5 skills each - cut the least impressive
+3. EXPERIENCE: 
+   - Keep all job entries but reduce bullets
+   - Most recent 2 jobs: max 3-4 bullets each
+   - Older jobs: max 2 bullets each (keep only the most impactful)
+   - MERGE similar bullet points where possible
+   - REMOVE: redundant phrases, obvious duties, weak verbs
+   - PRESERVE: quantified achievements, key skills, major accomplishments
+4. EDUCATION: Keep essential info only (degree, school, year) - remove GPA unless > 3.5
+5. CUSTOM SECTIONS:
+   - Keep ONLY the most impressive items (max 2-3 per section)
+   - Remove sections with weak/old content
+   - Prioritize: recent certifications > projects > awards > volunteering
+
+==============================================================================
+WHAT TO PRESERVE (NEVER CUT):
+==============================================================================
+- Quantified achievements (numbers, percentages, dollar amounts)
+- Key technical skills matching typical job requirements
+- Leadership/management experience indicators
+- Recent (last 3 years) achievements
+- Unique differentiators
+
+==============================================================================
+WHAT TO CUT FIRST:
+==============================================================================
+- Soft skills in bullets (teamwork, communication - keep them in core strengths only)
+- Obvious job duties ("Responsible for...")
+- Old/outdated certifications (> 5 years unless still relevant)
+- Redundant bullets that say similar things
+- Detailed descriptions - convert to concise bullets
+
+CRITICAL: Do NOT remove experiences, jobs, or education entries entirely - just shorten them!
+
+OUTPUT: Return the same JSON structure but with compressed content.`;
+
+      const userMessage = `COMPRESS THIS RESUME TO FIT ONE PAGE (maintain all sections but shorten content intelligently):\n\n${JSON.stringify(resumeData, null, 2)}`;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI gateway error (compress):", response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "AI usage limit reached. Please add credits to continue." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        throw new Error("No content returned from AI");
+      }
+
+      const compressedData = safeJSONParse(content);
+      console.log("Compress result parsed successfully");
+      
+      return new Response(JSON.stringify({ compressedResumeData: compressedData }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // -----------------------------
     // DEFAULT: Optimize existing resume data
     // -----------------------------
     const { resumeData, jobDescription } = body as {
@@ -500,19 +650,29 @@ OUTPUT JSON SHAPE (EXACT):
 
     const systemPrompt = `You are an expert ATS Resume Architect and senior U.S. recruiter with 15+ years of experience. Your job is to create highly optimized resumes that achieve 90-100% ATS match scores and maximize interview callbacks.
 
+==============================================================================
+CRITICAL: SMART SKILL CATEGORIZATION (NO MESSY SKILL LISTS!)
+==============================================================================
+You MUST organize skills into 4-6 logical categories with max 8 skills each.
+Category examples:
+- Software: "Languages", "Frameworks", "Cloud & DevOps", "Databases", "Tools"
+- Marketing: "Digital Marketing", "Analytics", "Content", "Platforms"
+- General: "Technical Skills", "Tools & Software", "Industry Knowledge", "Certifications"
+
 RESUME STRUCTURE REQUIREMENTS:
-1. Use this exact structure: SUMMARY → CORE STRENGTHS → EXPERIENCE → EDUCATION
+1. Use this exact structure: SUMMARY → CORE STRENGTHS → EXPERIENCE → EDUCATION → CUSTOM SECTIONS
 2. Keep content ATS-friendly: single-column, no tables, no icons.
 
 SUMMARY OPTIMIZATION:
 - Write 3-4 impactful sentences
-- Start with a professional title/identity (e.g., "Creative Technologist", "Results-driven Software Engineer")
+- Start with a professional title/identity
 - Include years of experience and key domains
 - Mention 3-5 most relevant technical skills
-- End with what you're known for or your working style
+- End with what you're known for
 
 CORE STRENGTHS FORMAT (CRITICAL):
-- Organize skills into 4-6 categories
+- Organize skills into 4-6 categories MAX
+- Each category: max 8 skills
 - Format: "Category Name: skill1, skill2, skill3"
 
 EXPERIENCE BULLETS (CRITICAL - MUST FOLLOW):
@@ -552,7 +712,7 @@ Return a JSON object with this EXACT structure:
   "extractedKeywords": ["react", "wordpress"]
 }`;
 
-    const userMessage = `Optimize this resume data for maximum ATS compatibility and interview callbacks:\n\nCURRENT RESUME DATA:\n${JSON.stringify(resumeData, null, 2)}\n\nRequirements:\n1. Create a compelling professional summary\n2. Organize skills into Core Strengths categories\n3. Rewrite ALL experience bullets following the action verb + task + tool + outcome formula\n4. Each position should have 3-5 strong bullets\n\nReturn ONLY the JSON object, no markdown or extra text.`;
+    const userMessage = `Optimize this resume data for maximum ATS compatibility and interview callbacks:\n\nCURRENT RESUME DATA:\n${JSON.stringify(resumeData, null, 2)}\n\nRequirements:\n1. Create a compelling professional summary\n2. Organize skills into 4-6 Core Strengths categories (max 8 skills each)\n3. Rewrite ALL experience bullets following the action verb + task + tool + outcome formula\n4. Each position should have 3-5 strong bullets\n\nReturn ONLY the JSON object, no markdown or extra text.`;
 
     console.log("Calling AI gateway for full resume optimization");
 

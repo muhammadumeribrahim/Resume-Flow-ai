@@ -9,11 +9,11 @@ import { JobDescriptionInput } from "@/components/JobDescriptionInput";
 import { ExportButtons } from "@/components/ExportButtons";
 import { ATSScore, ResumeAnalysis, ResumeData, ResumeFormat } from "@/types/resume";
 import { createEmptyResume, generatePlainTextResume } from "@/lib/resumeUtils";
-import { analyzeImportedResume, applyOptimizations, optimizeResume } from "@/lib/aiOptimization";
+import { analyzeImportedResume, applyOptimizations, optimizeResume, compressResumeToOnePage } from "@/lib/aiOptimization";
 import { generateDOCX, generatePDF } from "@/lib/documentExport";
 import { extractResumeTextFromFile } from "@/lib/resumeImport";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, EyeOff, Save } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Save, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,7 @@ const Index = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [resumeFormat, setResumeFormat] = useState<ResumeFormat>("standard");
@@ -189,6 +190,25 @@ const Index = () => {
     }
   };
 
+  const handleCompressToOnePage = async () => {
+    if (!resumeData.personalInfo.fullName) {
+      toast.error("Please add content before compressing");
+      return;
+    }
+
+    setIsCompressing(true);
+    try {
+      const compressed = await compressResumeToOnePage(resumeData);
+      setResumeData(compressed);
+      toast.success("Resume compressed to fit one page!");
+    } catch (error) {
+      console.error("Compression error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to compress resume");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
   const handleSaveResume = async () => {
     if (!resumeData.personalInfo.fullName) {
       toast.error("Please add your name before saving");
@@ -287,6 +307,16 @@ const Index = () => {
             >
               {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               {showPreview ? "Hide Preview" : "Show Preview"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCompressToOnePage}
+              disabled={!resumeData.personalInfo.fullName || isCompressing}
+              title="Compress to one page"
+            >
+              <Minimize2 className="w-4 h-4 mr-1.5" />
+              {isCompressing ? "Compressing..." : "1 Page"}
             </Button>
             <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
               <DialogTrigger asChild>
