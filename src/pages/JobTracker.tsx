@@ -57,7 +57,7 @@ interface JobApplication {
   position_title: string;
   location: string | null;
   work_type: "remote" | "onsite" | "hybrid" | null;
-  status: "saved" | "applied" | "interviewing" | "offer" | "rejected" | "withdrawn";
+  status: "saved" | "applied" | "interviewing" | "offer" | "rejected" | "withdrawn" | "ghosted";
   applied_date: string | null;
   job_url: string | null;
   salary_range: string | null;
@@ -80,6 +80,7 @@ const statusOptions = [
   { value: "offer", label: "Offer", color: "bg-success/20 text-success" },
   { value: "rejected", label: "Rejected", color: "bg-destructive/20 text-destructive" },
   { value: "withdrawn", label: "Withdrawn", color: "bg-muted text-muted-foreground" },
+  { value: "ghosted", label: "Ghosted", color: "bg-orange-500/20 text-orange-600" },
 ];
 
 const workTypeOptions = [
@@ -282,6 +283,28 @@ const JobTracker = () => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const getTimeAgo = (dateString: string | null) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+    }
+    if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months > 1 ? "s" : ""} ago`;
+    }
+    const years = Math.floor(diffDays / 365);
+    return `${years} year${years > 1 ? "s" : ""} ago`;
   };
 
   return (
@@ -487,9 +510,9 @@ const JobTracker = () => {
                           <span className="capitalize">{app.work_type}</span>
                         )}
                         {app.applied_date && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1" title={formatDate(app.applied_date)}>
                             <Calendar className="h-3.5 w-3.5" />
-                            {formatDate(app.applied_date)}
+                            {getTimeAgo(app.applied_date)}
                           </span>
                         )}
                         {app.salary_range && <span>{app.salary_range}</span>}
