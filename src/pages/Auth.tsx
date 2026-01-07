@@ -106,6 +106,26 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleResetPassword = async () => {
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password reset email sent! Check your inbox.");
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen gradient-surface flex items-center justify-center p-4">
       <Card className="w-full max-w-md glass-effect border-border/50">
@@ -155,6 +175,16 @@ const Auth = () => {
                     required
                     disabled={isLoading}
                   />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="text-sm text-primary hover:underline"
+                    disabled={isLoading}
+                  >
+                    Forgot password?
+                  </button>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
