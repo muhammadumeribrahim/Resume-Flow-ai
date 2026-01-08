@@ -71,6 +71,158 @@ function safeJSONParse(content: string): any {
   throw new Error("Failed to parse AI response as JSON after all repair attempts");
 }
 
+// Tool definition for structured resume output
+const resumeOutputTool = {
+  type: "function",
+  function: {
+    name: "return_parsed_resume",
+    description: "Return the parsed resume data with analysis",
+    parameters: {
+      type: "object",
+      properties: {
+        parsedResumeData: {
+          type: "object",
+          properties: {
+            personalInfo: {
+              type: "object",
+              properties: {
+                fullName: { type: "string" },
+                email: { type: "string" },
+                phone: { type: "string" },
+                location: { type: "string" },
+                linkedin: { type: "string" },
+                github: { type: "string" },
+                portfolio: { type: "string" }
+              },
+              required: ["fullName", "email", "phone", "location"]
+            },
+            summary: { type: "string" },
+            coreStrengths: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  category: { type: "string" },
+                  skills: { type: "string" }
+                },
+                required: ["id", "category", "skills"]
+              }
+            },
+            experience: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  jobTitle: { type: "string" },
+                  company: { type: "string" },
+                  location: { type: "string" },
+                  workType: { type: "string" },
+                  startDate: { type: "string" },
+                  endDate: { type: "string" },
+                  current: { type: "boolean" },
+                  bullets: { type: "array", items: { type: "string" } }
+                },
+                required: ["id", "jobTitle", "company", "startDate", "endDate", "bullets"]
+              }
+            },
+            education: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  degree: { type: "string" },
+                  field: { type: "string" },
+                  institution: { type: "string" },
+                  location: { type: "string" },
+                  graduationDate: { type: "string" },
+                  gpa: { type: "string" }
+                },
+                required: ["id", "degree", "institution"]
+              }
+            },
+            customSections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  title: { type: "string" },
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string" },
+                        title: { type: "string" },
+                        subtitle: { type: "string" },
+                        date: { type: "string" },
+                        description: { type: "string" },
+                        bullets: { type: "array", items: { type: "string" } }
+                      },
+                      required: ["id", "title", "bullets"]
+                    }
+                  }
+                },
+                required: ["id", "title", "items"]
+              }
+            },
+            skills: { type: "array", items: { type: "string" } }
+          },
+          required: ["personalInfo", "summary", "experience", "education", "skills"]
+        },
+        analysis: {
+          type: "object",
+          properties: {
+            weaknesses: { type: "array", items: { type: "string" } },
+            improvements: { type: "array", items: { type: "string" } },
+            missingKeywords: { type: "array", items: { type: "string" } },
+            score: { type: "number" }
+          },
+          required: ["weaknesses", "improvements", "missingKeywords", "score"]
+        },
+        atsScore: {
+          type: "object",
+          properties: {
+            overall: { type: "number" },
+            keywordMatch: { type: "number" },
+            formatting: { type: "number" },
+            structure: { type: "number" },
+            suggestions: { type: "array", items: { type: "string" } }
+          },
+          required: ["overall", "keywordMatch", "formatting", "structure", "suggestions"]
+        },
+        extractedKeywords: { type: "array", items: { type: "string" } }
+      },
+      required: ["parsedResumeData", "analysis", "atsScore", "extractedKeywords"]
+    }
+  }
+};
+
+// Helper to extract tool call result from AI response
+function extractToolCallResult(data: any): any {
+  // Check for tool_calls in the response
+  const toolCalls = data.choices?.[0]?.message?.tool_calls;
+  if (toolCalls && toolCalls.length > 0) {
+    const args = toolCalls[0].function?.arguments;
+    if (args) {
+      console.log("Successfully extracted tool call result");
+      return typeof args === 'string' ? JSON.parse(args) : args;
+    }
+  }
+  
+  // Fallback to content if no tool calls
+  const content = data.choices?.[0]?.message?.content;
+  if (content) {
+    console.log("Falling back to content parsing");
+    return safeJSONParse(content);
+  }
+  
+  throw new Error("No valid response from AI");
+}
+
 interface SkillCategory {
   id: string;
   category: string;
@@ -294,6 +446,8 @@ OUTPUT JSON SHAPE (EXACT):
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
           ],
+          tools: [resumeOutputTool],
+          tool_choice: { type: "function", function: { name: "return_parsed_resume" } },
         }),
       });
 
@@ -317,13 +471,9 @@ OUTPUT JSON SHAPE (EXACT):
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (!content) {
-        throw new Error("No content returned from AI");
-      }
-
-      const result = safeJSONParse(content);
+      console.log("AI response received for import action");
+      
+      const result = extractToolCallResult(data);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -498,6 +648,8 @@ OUTPUT JSON SHAPE (EXACT):
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
           ],
+          tools: [resumeOutputTool],
+          tool_choice: { type: "function", function: { name: "return_parsed_resume" } },
         }),
       });
 
@@ -521,15 +673,9 @@ OUTPUT JSON SHAPE (EXACT):
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (!content) {
-        throw new Error("No content returned from AI");
-      }
-
-      const result = safeJSONParse(content);
-      console.log("Tailor result parsed successfully");
+      console.log("AI response received for tailor action");
       
+      const result = extractToolCallResult(data);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
