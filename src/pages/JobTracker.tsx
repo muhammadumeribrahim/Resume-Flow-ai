@@ -198,16 +198,18 @@ const JobTracker = () => {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("job_applications")
-        .update({ status: newStatus })
-        .eq("id", id);
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
 
       if (error) throw error;
 
       setApplications((prev) =>
         prev.map((app) =>
-          app.id === id ? { ...app, status: newStatus as JobApplication["status"] } : app
+          app.id === id ? { ...data } as JobApplication : app
         )
       );
       toast.success("Status updated");
