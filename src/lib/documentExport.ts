@@ -226,16 +226,23 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
       }
       yPos += lineHeight;
 
-      // Bullets - normal
+      // Bullets - normal with hanging indent
       doc.setFont("times", "normal");
+      const bulletIndent = 8; // Indent for bullet character
+      const textIndent = 16; // Hanging indent for wrapped text
       (exp.bullets || []).filter(Boolean).forEach((bullet) => {
-        const bulletText = `• ${bullet}`;
-        const lines = doc.splitTextToSize(bulletText, contentWidth - 10);
-        lines.forEach((line: string, idx: number) => {
+        checkPageBreak();
+        // First line: bullet + text
+        doc.text("•", marginSide + bulletIndent, yPos);
+        const bulletTextLines = doc.splitTextToSize(bullet, contentWidth - textIndent - bulletIndent);
+        doc.text(bulletTextLines[0], marginSide + textIndent, yPos);
+        yPos += lineHeight;
+        // Wrapped lines: hanging indent
+        for (let i = 1; i < bulletTextLines.length; i++) {
           checkPageBreak();
-          doc.text(line, marginSide + (idx > 0 ? 8 : 0), yPos);
+          doc.text(bulletTextLines[i], marginSide + textIndent, yPos);
           yPos += lineHeight;
-        });
+        }
       });
       yPos += sectionSpacing;
     });
@@ -294,14 +301,19 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
           }
 
           doc.setFont("times", "normal");
+          const customBulletIndent = 8;
+          const customTextIndent = 16;
           (item.bullets || []).filter(Boolean).forEach((bullet) => {
-            const bulletText = `• ${bullet}`;
-            const lines = doc.splitTextToSize(bulletText, contentWidth - 10);
-            lines.forEach((line: string, idx: number) => {
+            checkPageBreak();
+            doc.text("•", marginSide + customBulletIndent, yPos);
+            const customBulletLines = doc.splitTextToSize(bullet, contentWidth - customTextIndent - customBulletIndent);
+            doc.text(customBulletLines[0], marginSide + customTextIndent, yPos);
+            yPos += lineHeight;
+            for (let i = 1; i < customBulletLines.length; i++) {
               checkPageBreak();
-              doc.text(line, marginSide + (idx > 0 ? 8 : 0), yPos);
+              doc.text(customBulletLines[i], marginSide + customTextIndent, yPos);
               yPos += lineHeight;
-            });
+            }
           });
           yPos += sectionSpacing;
         }
@@ -504,12 +516,12 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
         })
       );
 
-      // Bullets
+      // Bullets with hanging indent
       bullets.forEach((bullet, idx) => {
         children.push(
           new Paragraph({
             children: [new TextRun({ text: `• ${bullet}`, size: bodySize, font: "Times New Roman" })],
-            indent: { left: 180 },
+            indent: { left: 270, hanging: 90 },
             spacing: { after: idx === bullets.length - 1 ? sectionSpacing : 0 },
           })
         );
@@ -588,7 +600,7 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
                 children: [
                   new TextRun({ text: `• ${bullet}`, size: bodySize, font: "Times New Roman" }),
                 ],
-                indent: { left: 180 },
+                indent: { left: 270, hanging: 90 },
                 spacing: { after: 0 },
               })
             );
