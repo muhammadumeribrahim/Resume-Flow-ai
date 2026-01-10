@@ -300,6 +300,16 @@ export const generatePDF = (data: ResumeData, format: ResumeFormat = 'standard')
             addWrappedText(item.description, bodySize);
           }
 
+          // Project Link
+          const projectLinkUrl = normalizeUrl(item.link);
+          if (projectLinkUrl) {
+            checkPageBreak();
+            doc.setFontSize(bodySize);
+            doc.setFont("times", "normal");
+            addPdfLink("Project Link", projectLinkUrl, marginSide, yPos);
+            yPos += lineHeight;
+          }
+
           doc.setFont("times", "normal");
           const customBulletIndent = 8;
           const customTextIndent = 16;
@@ -589,6 +599,28 @@ export const generateDOCX = async (data: ResumeData, format: ResumeFormat = 'sta
               new Paragraph({
                 children: [
                   new TextRun({ text: item.description, size: bodySize, font: "Times New Roman" }),
+                ],
+              })
+            );
+          }
+
+          // Project Link
+          const projectLinkUrl = normalizeUrl(item.link);
+          if (projectLinkUrl) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new ExternalHyperlink({
+                    link: projectLinkUrl,
+                    children: [
+                      new TextRun({
+                        text: "Project Link",
+                        style: "Hyperlink",
+                        size: bodySize,
+                        font: "Times New Roman",
+                      }),
+                    ],
+                  }),
                 ],
               })
             );

@@ -262,6 +262,18 @@ export const ResumePreview = ({ data, format = 'standard' }: ResumePreviewProps)
                   {item.subtitle && (
                     <div style={{ fontSize: '10pt', lineHeight: '12pt' }}>{item.subtitle}</div>
                   )}
+                  {item.link && (
+                    <div style={{ fontSize: '10pt', lineHeight: '12pt' }}>
+                      <a 
+                        href={item.link.startsWith('http') ? item.link : `https://${item.link}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[#0000EE] underline"
+                      >
+                        Project Link
+                      </a>
+                    </div>
+                  )}
                   {item.description && (
                     <div style={{ fontSize: '10pt', lineHeight: '12pt' }}>{item.description}</div>
                   )}

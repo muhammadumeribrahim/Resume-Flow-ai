@@ -56,6 +56,7 @@ export interface CustomSectionItem {
   subtitle?: string;
   date?: string;
   description?: string;
+  link?: string; // Optional project/item link URL
   bullets: string[];
 }
 

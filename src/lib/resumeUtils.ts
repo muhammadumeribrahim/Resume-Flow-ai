@@ -58,6 +58,7 @@ export const createEmptyCustomSectionItem = (): CustomSectionItem => ({
   subtitle: "",
   date: "",
   description: "",
+  link: "",
   bullets: [""],
 });
 
