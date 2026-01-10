@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -79,11 +80,13 @@ export const Header = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground mr-2">
             <Sparkles className="w-4 h-4 text-accent" />
             <span>Powered by AI</span>
           </div>
+
+          <ThemeToggle />
 
           {user && (
             <Button

@@ -1,29 +1,53 @@
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Edit, Upload, ArrowRight, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { FileText, Edit, Upload, ArrowRight, AlertCircle, CheckCircle2, Sparkles, ClipboardPaste, X } from "lucide-react";
 import { ResumeAnalysis } from "@/types/resume";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface InputModeSelectorProps {
   onSelectMode: (mode: "form" | "paste" | "tailor") => void;
   onImportResume: (file: File) => void;
+  onImportText?: (text: string) => void;
   isAnalyzing?: boolean;
   analysis?: ResumeAnalysis | null;
 }
 
 export const InputModeSelector = ({ 
   onSelectMode, 
-  onImportResume, 
+  onImportResume,
+  onImportText,
   isAnalyzing = false,
   analysis = null 
 }: InputModeSelectorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showImportOptions, setShowImportOptions] = useState(false);
+  const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [pastedText, setPastedText] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       onImportResume(file);
+      setShowImportOptions(false);
     }
+  };
+
+  const handlePasteSubmit = () => {
+    if (pastedText.trim().length < 50) {
+      return;
+    }
+    if (onImportText) {
+      onImportText(pastedText);
+    }
+    setShowPasteDialog(false);
+    setPastedText("");
   };
 
   return (
@@ -78,24 +102,55 @@ export const InputModeSelector = ({
                 className="hidden"
               />
               
-              <Button
-                variant="accent"
-                className="w-full"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isAnalyzing}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin mr-2" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
+              {isAnalyzing ? (
+                <Button
+                  variant="accent"
+                  className="w-full"
+                  disabled
+                >
+                  <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin mr-2" />
+                  Analyzing...
+                </Button>
+              ) : showImportOptions ? (
+                <div className="w-full space-y-2">
+                  <Button
+                    variant="accent"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="w-4 h-4 mr-2" />
                     Choose File
-                  </>
-                )}
-              </Button>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setShowPasteDialog(true);
+                      setShowImportOptions(false);
+                    }}
+                  >
+                    <ClipboardPaste className="w-4 h-4 mr-2" />
+                    Paste Text
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-muted-foreground"
+                    onClick={() => setShowImportOptions(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="accent"
+                  className="w-full"
+                  onClick={() => setShowImportOptions(true)}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Resume
+                </Button>
+              )}
             </div>
           </Card>
 
@@ -124,6 +179,72 @@ export const InputModeSelector = ({
             </div>
           </Card>
         </div>
+
+        {/* Paste Text Dialog */}
+        <Dialog open={showPasteDialog} onOpenChange={setShowPasteDialog}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardPaste className="w-5 h-5" />
+                Paste Your Resume Text
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Copy and paste your entire resume content below. We'll parse and format it for you.
+              </p>
+              <Textarea
+                placeholder="Paste your resume content here...
+
+Example:
+John Doe
+Software Engineer
+john.doe@email.com | (555) 123-4567
+
+EXPERIENCE
+Company Name | Jan 2022 - Present
+• Developed web applications using React and TypeScript
+• Led team of 5 developers on major product launches
+..."
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                className="min-h-[300px] font-mono text-sm"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  {pastedText.length} characters {pastedText.length < 50 && pastedText.length > 0 && "(minimum 50)"}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowPasteDialog(false);
+                      setPastedText("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handlePasteSubmit}
+                    disabled={pastedText.trim().length < 50 || isAnalyzing}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Import & Analyze
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Analysis Results */}
         {analysis && (
