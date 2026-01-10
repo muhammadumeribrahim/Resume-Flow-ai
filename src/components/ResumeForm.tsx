@@ -455,7 +455,15 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                     <Input
                       type="month"
                       value={exp.startDate}
-                      onChange={(e) => updateExperience(exp.id, { startDate: e.target.value })}
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        // If end date exists and is before start date, clear end date
+                        if (exp.endDate && newStartDate > exp.endDate) {
+                          updateExperience(exp.id, { startDate: newStartDate, endDate: "" });
+                        } else {
+                          updateExperience(exp.id, { startDate: newStartDate });
+                        }
+                      }}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -463,9 +471,20 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                     <Input
                       type="month"
                       value={exp.endDate}
-                      onChange={(e) => updateExperience(exp.id, { endDate: e.target.value })}
+                      min={exp.startDate || undefined}
+                      onChange={(e) => {
+                        const newEndDate = e.target.value;
+                        // Validate end date is not before start date
+                        if (exp.startDate && newEndDate < exp.startDate) {
+                          return; // Don't update if invalid
+                        }
+                        updateExperience(exp.id, { endDate: newEndDate });
+                      }}
                       disabled={exp.current}
                     />
+                    {exp.startDate && exp.endDate && exp.endDate < exp.startDate && !exp.current && (
+                      <p className="text-xs text-destructive">End date cannot be before start date</p>
+                    )}
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id={`current-${exp.id}`}
@@ -670,13 +689,23 @@ export const ResumeForm = ({ data, onChange, onOptimize, isOptimizing }: ResumeF
                           />
                         </div>
                       </div>
-                      <div className="grid gap-2">
-                        <Label className="text-xs">Subtitle (optional)</Label>
-                        <Input
-                          placeholder="Amazon Web Services"
-                          value={item.subtitle || ""}
-                          onChange={(e) => updateCustomSectionItem(section.id, item.id, { subtitle: e.target.value })}
-                        />
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Subtitle (optional)</Label>
+                          <Input
+                            placeholder="Amazon Web Services"
+                            value={item.subtitle || ""}
+                            onChange={(e) => updateCustomSectionItem(section.id, item.id, { subtitle: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label className="text-xs">Project Link (optional)</Label>
+                          <Input
+                            placeholder="https://github.com/user/project"
+                            value={item.link || ""}
+                            onChange={(e) => updateCustomSectionItem(section.id, item.id, { link: e.target.value })}
+                          />
+                        </div>
                       </div>
                       <div className="grid gap-2">
                         <Label className="text-xs">Description (optional)</Label>

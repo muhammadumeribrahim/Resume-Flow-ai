@@ -160,6 +160,7 @@ const resumeOutputTool = {
                         subtitle: { type: "string" },
                         date: { type: "string" },
                         description: { type: "string" },
+                        link: { type: "string" },
                         bullets: { type: "array", items: { type: "string" } }
                       },
                       required: ["id", "title", "bullets"]
@@ -324,8 +325,24 @@ const compressOutputTool = {
             properties: {
               id: { type: "string" },
               title: { type: "string" },
-              items: { type: "array" }
-            }
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    title: { type: "string" },
+                    subtitle: { type: "string" },
+                    date: { type: "string" },
+                    description: { type: "string" },
+                    link: { type: "string" },
+                    bullets: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["id", "title", "bullets"]
+                }
+              }
+            },
+            required: ["id", "title", "items"]
           }
         },
         skills: { type: "array", items: { type: "string" } }
@@ -487,9 +504,29 @@ GENERAL PARSING RULES
 - Clean up messy formatting, fix obvious typos in section headers.
 
 ==============================================================================
-CUSTOM SECTIONS DETECTION (IMPORTANT)
+CUSTOM SECTIONS DETECTION (CRITICAL - DO NOT MISS ANY CONTENT!)
 ==============================================================================
-Scan for ANY sections beyond the standard ones. Map them to customSections.
+You MUST carefully scan the ENTIRE resume for ANY sections beyond Summary, Experience, and Education.
+Common sections to look for (create customSections for each found):
+- Projects / Technical Projects / Academic Projects / Personal Projects
+- Certifications / Licenses / Professional Certifications
+- Awards / Honors / Achievements / Recognition
+- Volunteering / Community Service / Volunteer Work
+- Publications / Research / Papers
+- Languages / Language Proficiency
+- Interests / Hobbies (less common but include if present)
+- Leadership / Extracurricular Activities
+
+FOR EACH CUSTOM SECTION ITEM, YOU MUST EXTRACT:
+1. title: The name of the item (project name, certification name, award name, etc.)
+2. subtitle: Organization, issuer, or additional context
+3. date: Any date information (year, month/year, date range)
+4. description: Any descriptive text
+5. link: Any URLs found (project links, certificate verification links, GitHub repos)
+6. bullets: ALL bullet points, details, or achievements listed under the item
+
+CRITICAL: Do NOT leave items with empty bullets if there is descriptive content - 
+put descriptions in the description field AND create bullets from any listed details.
 DO NOT leave any resume content unaccounted for.
 
 OUTPUT JSON SHAPE (EXACT):
@@ -543,6 +580,7 @@ OUTPUT JSON SHAPE (EXACT):
             "subtitle": "Organization or context if any",
             "date": "Date if present",
             "description": "Brief description if any",
+            "link": "URL if present (e.g., project link, certificate link)",
             "bullets": ["Detail 1", "Detail 2"]
           }
         ]
@@ -682,12 +720,27 @@ WHAT YOU CAN AND SHOULD DO:
 6. REORGANIZE skills into proper categories, prioritizing job-relevant ones
 
 ==============================================================================
-CUSTOM SECTIONS - CRITICAL:
+CUSTOM SECTIONS - CRITICAL (DO NOT MISS ANY CONTENT!):
 ==============================================================================
-Scan for ANY sections beyond standard ones (Summary, Experience, Education):
-- Projects, Certifications, Awards, Volunteering, Publications, Languages, etc.
-- Create entries in customSections for EACH found
-- Order them according to the priority list above
+You MUST carefully scan the ENTIRE resume for ANY sections beyond Summary, Experience, and Education.
+Common sections to look for:
+- Projects / Technical Projects / Academic Projects / Personal Projects
+- Certifications / Licenses / Professional Certifications
+- Awards / Honors / Achievements / Recognition
+- Volunteering / Community Service / Volunteer Work
+- Publications / Research / Papers
+- Languages / Language Proficiency
+
+FOR EACH CUSTOM SECTION ITEM, YOU MUST EXTRACT:
+1. title: The name of the item (project name, certification name, award name, etc.)
+2. subtitle: Organization, issuer, or additional context
+3. date: Any date information (year, month/year, date range)
+4. description: Any descriptive text
+5. link: Any URLs found (project links, certificate verification links, GitHub repos)
+6. bullets: ALL bullet points, details, or achievements listed under the item
+
+CRITICAL: Do NOT leave items with empty bullets if there is descriptive content.
+Order custom sections by relevance to the target job.
 
 JOB DESCRIPTION TO TARGET:
 """
@@ -745,7 +798,8 @@ OUTPUT JSON SHAPE (EXACT):
             "subtitle": "Organization",
             "date": "Date",
             "description": "Description",
-            "bullets": ["Detail bullets"]
+            "link": "URL if present",
+            "bullets": ["Detail bullets - MUST include all content"]
           }
         ]
       }
