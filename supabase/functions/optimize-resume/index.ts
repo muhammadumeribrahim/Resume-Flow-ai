@@ -71,7 +71,7 @@ function safeJSONParse(content: string): any {
   throw new Error("Failed to parse AI response as JSON after all repair attempts");
 }
 
-// Tool definition for structured resume output
+// Tool definition for structured resume output (import/tailor actions)
 const resumeOutputTool = {
   type: "function",
   function: {
@@ -197,6 +197,140 @@ const resumeOutputTool = {
         extractedKeywords: { type: "array", items: { type: "string" } }
       },
       required: ["parsedResumeData", "analysis", "atsScore", "extractedKeywords"]
+    }
+  }
+};
+
+// Tool definition for optimization results
+const optimizeOutputTool = {
+  type: "function",
+  function: {
+    name: "return_optimized_resume",
+    description: "Return the optimized resume content with ATS score",
+    parameters: {
+      type: "object",
+      properties: {
+        optimizedSummary: { type: "string" },
+        optimizedCoreStrengths: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              category: { type: "string" },
+              skills: { type: "string" }
+            },
+            required: ["id", "category", "skills"]
+          }
+        },
+        optimizedExperience: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              optimizedBullets: { type: "array", items: { type: "string" } }
+            },
+            required: ["id", "optimizedBullets"]
+          }
+        },
+        atsScore: {
+          type: "object",
+          properties: {
+            overall: { type: "number" },
+            keywordMatch: { type: "number" },
+            formatting: { type: "number" },
+            structure: { type: "number" },
+            suggestions: { type: "array", items: { type: "string" } }
+          },
+          required: ["overall", "keywordMatch", "formatting", "structure", "suggestions"]
+        },
+        extractedKeywords: { type: "array", items: { type: "string" } }
+      },
+      required: ["optimizedSummary", "optimizedCoreStrengths", "optimizedExperience", "atsScore", "extractedKeywords"]
+    }
+  }
+};
+
+// Tool definition for compress results
+const compressOutputTool = {
+  type: "function",
+  function: {
+    name: "return_compressed_resume",
+    description: "Return the compressed resume data",
+    parameters: {
+      type: "object",
+      properties: {
+        personalInfo: {
+          type: "object",
+          properties: {
+            fullName: { type: "string" },
+            email: { type: "string" },
+            phone: { type: "string" },
+            location: { type: "string" },
+            linkedin: { type: "string" },
+            github: { type: "string" },
+            portfolio: { type: "string" }
+          }
+        },
+        summary: { type: "string" },
+        coreStrengths: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              category: { type: "string" },
+              skills: { type: "string" }
+            }
+          }
+        },
+        experience: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              jobTitle: { type: "string" },
+              company: { type: "string" },
+              location: { type: "string" },
+              workType: { type: "string" },
+              startDate: { type: "string" },
+              endDate: { type: "string" },
+              current: { type: "boolean" },
+              bullets: { type: "array", items: { type: "string" } }
+            }
+          }
+        },
+        education: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              degree: { type: "string" },
+              field: { type: "string" },
+              institution: { type: "string" },
+              location: { type: "string" },
+              graduationDate: { type: "string" },
+              gpa: { type: "string" }
+            }
+          }
+        },
+        customSections: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              items: { type: "array" }
+            }
+          }
+        },
+        skills: { type: "array", items: { type: "string" } }
+      },
+      required: ["personalInfo", "summary", "experience", "education"]
     }
   }
 };
@@ -747,6 +881,8 @@ OUTPUT: Return the same JSON structure but with compressed content.`;
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
           ],
+          tools: [compressOutputTool],
+          tool_choice: { type: "function", function: { name: "return_compressed_resume" } },
         }),
       });
 
@@ -770,14 +906,10 @@ OUTPUT: Return the same JSON structure but with compressed content.`;
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (!content) {
-        throw new Error("No content returned from AI");
-      }
-
-      const compressedData = safeJSONParse(content);
-      console.log("Compress result parsed successfully");
+      console.log("AI response received for compress action");
+      
+      const compressedData = extractToolCallResult(data);
+      console.log("Compress result extracted successfully");
       
       return new Response(JSON.stringify({ compressedResumeData: compressedData }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -874,6 +1006,8 @@ Return a JSON object with this EXACT structure:
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
+        tools: [optimizeOutputTool],
+        tool_choice: { type: "function", function: { name: "return_optimized_resume" } },
       }),
     });
 
@@ -897,17 +1031,10 @@ Return a JSON object with this EXACT structure:
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    console.log("AI response received for optimize action");
 
-    if (!content) {
-      throw new Error("No content returned from AI");
-    }
-
-    console.log("AI response received, parsing JSON");
-
-    const optimizationResult = safeJSONParse(content);
-
-    console.log("Successfully parsed optimization result");
+    const optimizationResult = extractToolCallResult(data);
+    console.log("Successfully extracted optimization result");
 
     return new Response(JSON.stringify(optimizationResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
