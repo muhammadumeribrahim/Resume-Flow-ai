@@ -72,32 +72,49 @@ const Index = () => {
         throw new Error("We couldn't extract enough text from that file. Try a different PDF/DOCX, or upload a TXT version.");
       }
 
-      const result = await analyzeImportedResume(rawText);
-
-      setResumeData(result.parsedResumeData);
-      setAnalysis(result.analysis);
-
-      if (result.atsScore) {
-        setAtsScore(result.atsScore);
-      } else {
-        // fall back to a minimal score card from analysis.score
-        setAtsScore((prev) => ({
-          ...prev,
-          overall: result.analysis.score,
-          suggestions: result.analysis.weaknesses?.slice(0, 3) || prev.suggestions,
-        }));
-      }
-
-      if (result.extractedKeywords) {
-        setExtractedKeywords(result.extractedKeywords);
-      }
-
+      await processResumeText(rawText);
       toast.success("Resume imported and analyzed. Review the findings, then continue to optimize.");
     } catch (error) {
       console.error("Import error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to import resume. Please try a different file.");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleImportText = async (text: string) => {
+    setIsAnalyzing(true);
+
+    try {
+      await processResumeText(text);
+      toast.success("Resume text parsed and analyzed. Review the findings, then continue to optimize.");
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to parse resume text.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const processResumeText = async (rawText: string) => {
+    const result = await analyzeImportedResume(rawText);
+
+    setResumeData(result.parsedResumeData);
+    setAnalysis(result.analysis);
+
+    if (result.atsScore) {
+      setAtsScore(result.atsScore);
+    } else {
+      // fall back to a minimal score card from analysis.score
+      setAtsScore((prev) => ({
+        ...prev,
+        overall: result.analysis.score,
+        suggestions: result.analysis.weaknesses?.slice(0, 3) || prev.suggestions,
+      }));
+    }
+
+    if (result.extractedKeywords) {
+      setExtractedKeywords(result.extractedKeywords);
     }
   };
 
@@ -250,6 +267,7 @@ const Index = () => {
         <InputModeSelector
           onSelectMode={handleSelectMode}
           onImportResume={handleImportResume}
+          onImportText={handleImportText}
           isAnalyzing={isAnalyzing}
           analysis={analysis}
         />
