@@ -57,8 +57,18 @@ export const InputModeSelector = ({
           <h1 className="text-3xl sm:text-4xl font-heading font-bold text-foreground mb-3">
             Create Your ATS-Optimized Resume
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-lg mb-4">
             Choose how you'd like to get started
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Or go to your{" "}
+            <button
+              onClick={() => window.location.href = "/dashboard"}
+              className="text-primary hover:underline font-medium"
+            >
+              Applications Dashboard
+            </button>{" "}
+            to track your job applications
           </p>
         </div>
 

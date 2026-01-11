@@ -47,7 +47,7 @@ export const Header = () => {
                 className="gap-1.5"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                Dashboard
+                Applications
               </Button>
               <Button
                 variant={isActive("/") ? "secondary" : "ghost"}
