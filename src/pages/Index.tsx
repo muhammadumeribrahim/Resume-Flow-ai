@@ -13,8 +13,9 @@ import { analyzeImportedResume, applyOptimizations, optimizeResume, compressResu
 import { generateDOCX, generatePDF } from "@/lib/documentExport";
 import { extractResumeTextFromFile } from "@/lib/resumeImport";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, EyeOff, Save, Minimize2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Save, Minimize2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -385,6 +386,35 @@ const Index = () => {
               onOptimize={handleOptimize}
               isOptimizing={isOptimizing}
             />
+
+            {/* Bottom Export Buttons for easy access */}
+            <Card className="p-4 glass-effect">
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Ready to download your resume?
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    onClick={handleExportPDF}
+                    disabled={!resumeData.personalInfo.fullName}
+                    className="gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Download PDF
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={handleExportDOCX}
+                    disabled={!resumeData.personalInfo.fullName}
+                    className="gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Download DOCX
+                  </Button>
+                </div>
+              </div>
+            </Card>
           </div>
 
           <div className={`space-y-6 ${!showPreview ? "hidden lg:block" : ""}`}>

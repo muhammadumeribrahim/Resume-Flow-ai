@@ -99,7 +99,7 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">Applications Dashboard</h1>
           <p className="text-muted-foreground">
             Track your job search progress and manage your resumes
           </p>

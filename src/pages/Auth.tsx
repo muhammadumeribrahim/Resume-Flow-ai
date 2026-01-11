@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { FileText, Sparkles, Loader2, KeyRound } from "lucide-react";
 import { z } from "zod";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -261,7 +262,10 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen gradient-surface flex items-center justify-center p-4">
+    <div className="min-h-screen gradient-surface flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md glass-effect border-border/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">

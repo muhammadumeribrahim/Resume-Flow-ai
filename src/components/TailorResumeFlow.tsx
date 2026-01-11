@@ -2,11 +2,17 @@ import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Sparkles, ArrowLeft, FileText, AlertCircle } from "lucide-react";
+import { Upload, Sparkles, ArrowLeft, FileText, AlertCircle, ClipboardPaste } from "lucide-react";
 import { ResumeData, ATSScore, ResumeAnalysis } from "@/types/resume";
 import { extractResumeTextFromFile } from "@/lib/resumeImport";
 import { tailorResumeToJob } from "@/lib/aiOptimization";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface TailorResumeFlowProps {
   onComplete: (data: ResumeData, atsScore: ATSScore, keywords: string[]) => void;
@@ -19,6 +25,8 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [pastedResumeText, setPastedResumeText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleJobDescriptionNext = () => {
@@ -29,19 +37,15 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
     setStep("resume");
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadedFileName(file.name);
+  const processResumeText = async (rawText: string, sourceName: string) => {
+    setUploadedFileName(sourceName);
     setError(null);
     setIsProcessing(true);
     setStep("processing");
 
     try {
-      const rawText = await extractResumeTextFromFile(file);
       if (!rawText || rawText.trim().length < 50) {
-        throw new Error("We couldn't extract enough text from that file. Try a different PDF/DOCX, or upload a TXT version.");
+        throw new Error("Not enough text content. Please provide more resume content.");
       }
 
       const result = await tailorResumeToJob(rawText, jobDescription);
@@ -68,6 +72,30 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const rawText = await extractResumeTextFromFile(file);
+      await processResumeText(rawText, file.name);
+    } catch (err) {
+      console.error("File extraction error:", err);
+      setError(err instanceof Error ? err.message : "Failed to read file");
+      toast.error("Failed to read file. Please try a different format.");
+    }
+  };
+
+  const handlePasteSubmit = async () => {
+    if (pastedResumeText.trim().length < 50) {
+      toast.error("Please paste more resume content (at least 50 characters)");
+      return;
+    }
+    setShowPasteDialog(false);
+    await processResumeText(pastedResumeText, "Pasted Resume");
+    setPastedResumeText("");
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
       <div className="max-w-2xl w-full">
@@ -90,7 +118,7 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
           </h1>
           <p className="text-muted-foreground">
             {step === "job" && "Paste the target job description to begin"}
-            {step === "resume" && "Upload your current resume to tailor it"}
+            {step === "resume" && "Upload or paste your current resume to tailor it"}
             {step === "processing" && "AI is tailoring your resume..."}
           </p>
         </div>
@@ -147,10 +175,10 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
               <div className="text-center py-8 border-2 border-dashed border-border rounded-xl hover:border-primary/50 transition-colors">
                 <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-foreground font-medium mb-1">
-                  Upload Your Current Resume
+                  Upload or Paste Your Current Resume
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  PDF, DOCX, or TXT format
+                  PDF, DOCX, TXT, or paste text directly
                 </p>
 
                 <input
@@ -161,13 +189,22 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
                   className="hidden"
                 />
 
-                <Button
-                  variant="default"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose File
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    variant="default"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose File
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPasteDialog(true)}
+                  >
+                    <ClipboardPaste className="w-4 h-4 mr-2" />
+                    Paste Text
+                  </Button>
+                </div>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">
@@ -216,6 +253,63 @@ export const TailorResumeFlow = ({ onComplete, onBack }: TailorResumeFlowProps) 
             </div>
           </Card>
         )}
+
+        {/* Paste Text Dialog */}
+        <Dialog open={showPasteDialog} onOpenChange={setShowPasteDialog}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardPaste className="w-5 h-5" />
+                Paste Your Resume Text
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Copy and paste your entire resume content below. We'll parse and tailor it for your target job.
+              </p>
+              <Textarea
+                placeholder="Paste your resume content here...
+
+Example:
+John Doe
+Software Engineer
+john.doe@email.com | (555) 123-4567
+
+EXPERIENCE
+Company Name | Jan 2022 - Present
+• Developed web applications using React and TypeScript
+• Led team of 5 developers on major product launches
+..."
+                value={pastedResumeText}
+                onChange={(e) => setPastedResumeText(e.target.value)}
+                className="min-h-[300px] font-mono text-sm"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  {pastedResumeText.length} characters {pastedResumeText.length < 50 && pastedResumeText.length > 0 && "(minimum 50)"}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowPasteDialog(false);
+                      setPastedResumeText("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handlePasteSubmit}
+                    disabled={pastedResumeText.trim().length < 50}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Tailor Resume
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
