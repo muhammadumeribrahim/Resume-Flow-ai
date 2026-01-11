@@ -23,7 +23,7 @@ export const Header = () => {
         <div className="flex items-center gap-6">
           <div 
             className="flex items-center gap-2.5 cursor-pointer"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/")}
           >
             <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-md">
               <FileText className="w-5 h-5 text-primary-foreground" />
