@@ -26,10 +26,11 @@ interface CompressResult {
 
 export const optimizeResume = async (
   resumeData: ResumeData,
-  jobDescription?: string
+  jobDescription?: string,
+  existingSuggestions?: string[]
 ): Promise<OptimizationResult> => {
   const { data, error } = await supabase.functions.invoke<OptimizationResult>("optimize-resume", {
-    body: { resumeData, jobDescription },
+    body: { resumeData, jobDescription, existingSuggestions },
   });
 
   if (error) {

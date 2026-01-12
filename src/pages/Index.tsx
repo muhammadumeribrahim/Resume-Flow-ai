@@ -10,6 +10,7 @@ import { ExportButtons } from "@/components/ExportButtons";
 import { ATSScore, ResumeAnalysis, ResumeData, ResumeFormat } from "@/types/resume";
 import { createEmptyResume, generatePlainTextResume } from "@/lib/resumeUtils";
 import { analyzeImportedResume, applyOptimizations, optimizeResume, compressResumeToOnePage } from "@/lib/aiOptimization";
+import { normalizeATSScore } from "@/lib/atsScoreUtils";
 import { generateDOCX, generatePDF } from "@/lib/documentExport";
 import { extractResumeTextFromFile } from "@/lib/resumeImport";
 import { toast } from "sonner";
@@ -104,14 +105,24 @@ const Index = () => {
     setAnalysis(result.analysis);
 
     if (result.atsScore) {
-      setAtsScore(result.atsScore);
+      setAtsScore(
+        normalizeATSScore(result.atsScore, result.parsedResumeData, {
+          hasTargetJob: false,
+        })
+      );
     } else {
       // fall back to a minimal score card from analysis.score
-      setAtsScore((prev) => ({
-        ...prev,
-        overall: result.analysis.score,
-        suggestions: result.analysis.weaknesses?.slice(0, 3) || prev.suggestions,
-      }));
+      setAtsScore((prev) =>
+        normalizeATSScore(
+          {
+            ...prev,
+            overall: result.analysis.score,
+            suggestions: result.analysis.weaknesses?.slice(0, 3) || prev.suggestions,
+          },
+          result.parsedResumeData,
+          { hasTargetJob: false }
+        )
+      );
     }
 
     if (result.extractedKeywords) {
@@ -121,7 +132,11 @@ const Index = () => {
 
   const handleTailorComplete = (data: ResumeData, score: ATSScore, keywords: string[]) => {
     setResumeData(data);
-    setAtsScore(score);
+    setAtsScore(
+      normalizeATSScore(score, data, {
+        hasTargetJob: true,
+      })
+    );
     setExtractedKeywords(keywords);
     setMode("form");
   };
@@ -132,15 +147,25 @@ const Index = () => {
       return;
     }
 
+    const hasTargetJob = jobDescription.trim().length >= 50;
+
     setIsOptimizing(true);
 
     try {
-      const result = await optimizeResume(resumeData, jobDescription || undefined);
+      const result = await optimizeResume(
+        resumeData,
+        hasTargetJob ? jobDescription : undefined,
+        atsScore.suggestions
+      );
 
       const optimizedData = applyOptimizations(resumeData, result);
       setResumeData(optimizedData);
 
-      setAtsScore(result.atsScore);
+      setAtsScore(
+        normalizeATSScore(result.atsScore, optimizedData, {
+          hasTargetJob,
+        })
+      );
 
       if (result.extractedKeywords) {
         setExtractedKeywords(result.extractedKeywords);
@@ -418,7 +443,7 @@ const Index = () => {
           </div>
 
           <div className={`space-y-6 ${!showPreview ? "hidden lg:block" : ""}`}>
-            <ATSScoreCard score={atsScore} />
+            <ATSScoreCard score={atsScore} keywordMatchEnabled={jobDescription.trim().length >= 50} />
 
             <div className="bg-muted/30 rounded-xl p-4 overflow-auto max-h-[800px] glass-effect">
               <div className="text-xs text-muted-foreground mb-3 flex items-center justify-between">
