@@ -5,9 +5,10 @@ import { ATSScore } from "@/types/resume";
 
 interface ATSScoreCardProps {
   score: ATSScore;
+  keywordMatchEnabled?: boolean;
 }
 
-export const ATSScoreCard = ({ score }: ATSScoreCardProps) => {
+export const ATSScoreCard = ({ score, keywordMatchEnabled = false }: ATSScoreCardProps) => {
   const getScoreColor = (value: number) => {
     if (value >= 90) return "text-success";
     if (value >= 70) return "text-warning";
@@ -67,13 +68,18 @@ export const ATSScoreCard = ({ score }: ATSScoreCardProps) => {
       <div className="space-y-3">
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-muted-foreground">Keyword Match</span>
-            <span className="font-medium">{score.keywordMatch}%</span>
+            <span className="text-muted-foreground">
+              Keyword Match
+              {!keywordMatchEnabled && (
+                <span className="ml-1 text-xs text-muted-foreground">(add a target job to score)</span>
+              )}
+            </span>
+            <span className="font-medium">{keywordMatchEnabled ? `${score.keywordMatch}%` : "N/A"}</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${getProgressColor(score.keywordMatch)}`}
-              style={{ width: `${score.keywordMatch}%` }}
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${keywordMatchEnabled ? getProgressColor(score.keywordMatch) : "bg-muted"}`}
+              style={{ width: `${keywordMatchEnabled ? score.keywordMatch : 0}%` }}
             />
           </div>
         </div>

@@ -504,6 +504,22 @@ GENERAL PARSING RULES
 - Clean up messy formatting, fix obvious typos in section headers.
 
 ==============================================================================
+ATS SCORING RULES (NO JOB DESCRIPTION)
+==============================================================================
+- There is NO target job description in this mode.
+- Keyword Match MUST NOT default to 100.
+- Set keywordMatch to a conservative estimate (typically 40–85) based on:
+  a) role-specific skills/tooling present,
+  b) completeness of sections,
+  c) missingKeywords you identified.
+
+==============================================================================
+SUGGESTIONS QUALITY (MUST BE TRUE)
+==============================================================================
+- Suggestions MUST be consistent with the parsedResumeData you output.
+- NEVER suggest adding a section that already exists (e.g., Projects, Certifications).
+
+==============================================================================
 CUSTOM SECTIONS DETECTION (CRITICAL - DO NOT MISS ANY CONTENT!)
 ==============================================================================
 You MUST carefully scan the ENTIRE resume for ANY sections beyond Summary, Experience, and Education.
@@ -704,10 +720,14 @@ CRITICAL RULES - ABSOLUTE NON-NEGOTIABLES (NEVER VIOLATE THESE):
 1. NEVER change job titles - Keep exact titles as they appear in the original resume
 2. NEVER change company names - Keep exact company names as written
 3. NEVER change employment dates - Keep all dates exactly as they appear
-4. NEVER fabricate experience - Do not add projects, achievements, or responsibilities that don't exist
-5. NEVER fabricate skills or certifications - Only include what the candidate actually has
-6. NEVER exaggerate years of experience - Keep experience duration accurate
-7. NEVER invent metrics or numbers - Only use quantified achievements if they exist in the original
+4. NEVER fabricate credentials - Do not invent degrees, certifications, or employers
+5. NEVER add skills that are clearly not supported by the resume
+6. Be honest: do not claim responsibilities that did not happen
+
+METRICS POLICY (IMPORTANT):
+- Prefer REAL metrics already present.
+- If a bullet clearly implies measurable impact but lacks numbers, you MAY add a conservative, role-appropriate metric.
+- Never add extreme/unrealistic numbers; keep it plausible and defensible.
 
 ==============================================================================
 WHAT YOU CAN AND SHOULD DO:
@@ -973,9 +993,10 @@ OUTPUT: Return the same JSON structure but with compressed content.`;
     // -----------------------------
     // DEFAULT: Optimize existing resume data
     // -----------------------------
-    const { resumeData, jobDescription } = body as {
+    const { resumeData, jobDescription, existingSuggestions } = body as {
       resumeData: ResumeData;
       jobDescription?: string;
+      existingSuggestions?: string[];
     };
 
     console.log("Received resume optimization request for:", resumeData?.personalInfo?.fullName);
