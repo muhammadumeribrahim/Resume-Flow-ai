@@ -30,7 +30,7 @@ export const Header = () => {
             </div>
             <div>
               <h1 className="font-heading font-bold text-lg text-foreground leading-none">
-                ResumeAI
+                Resume Flow AI
               </h1>
               <p className="text-[10px] text-muted-foreground leading-none mt-0.5">
                 ATS-Optimized Resumes
